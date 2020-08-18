@@ -48,6 +48,10 @@ if ($dec) {
       $bin = pack('H*',substr($buf,1));
       $cidv = unpack'C',substr($bin,0,1);
       $mhash = ($cidv == 1) ? substr($bin,2) : $bin;
+   } elsif ($buf =~ m/^k/i) {
+      $bin = &decode_base36(substr($buf,1));
+      $cidv = unpack'C',substr($bin,0,1);
+      $mhash = ($cidv == 1) ? substr($bin,2) : $bin;
    } elsif ($buf =~ m/^([um])/i) {
       $buf =~ tr{-_}{+/} if ($1 eq 'u');
       $bin = &decode_base64m(substr($buf,1));
@@ -67,7 +71,9 @@ if ($dec) {
    $cidv = unpack'C',substr($bin,0,1);
    $mhash = ($cidv == 1) ? substr($bin,2) : $bin;
 }
+my $binp = $bin; $binp =~ tr/\000-\034\134\177-\377/./;
 my $qm = &encode_base58($mhash);
+my $qm36 = &encode_base36($mhash);
 my $quint = &hex2quint(unpack'H*',$mhash);
 my $b16 = unpack'H*',$bin;
 my $b10 = &encode_base10($bin);
@@ -84,7 +90,9 @@ my $b64u = &encode_base64u($bin); $b64u =~ tr /=//d;
 my $b64e = &encode_basen($bin,64);
 
 print "--- # other encoding for z.$qm\n";
+printf "bin: %s\n",$binp;
 printf "qm: %s\n",$qm;
+printf "qm36: K%s\n",$qm36;
 printf "quint: %s\n",$quint;
 printf "b10: 9%s\n",$b10;
 printf "b12: E%s\n",$b12;
