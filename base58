@@ -26,7 +26,7 @@ my $buf = <>;
 $buf = decode_mbase($buf) if ($decode);
 printf "buf: f%s\n",unpack'H*',$buf if ($verbose|$dbug);
 if ($noh) {
-   $buf = substr($buf,2) if (substr($buf,0,1) == "\01");
+   $buf = substr($buf,2) if (substr($buf,0,1) eq "\x01");
    printf "%s\n",&encode_base58($buf);
 } else {
    printf "z%s\n",&encode_base58($buf);

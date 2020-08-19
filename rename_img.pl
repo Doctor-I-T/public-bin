@@ -3,6 +3,13 @@
 
 # The secret ingredient is always love ...
 
+
+my $all = 0;
+if ($ARGV[0] eq '-a') {
+ $all=1;
+ shift;
+}
+
 my $root;
 if (@ARGV) {
   $root = shift
@@ -18,7 +25,7 @@ if (@ARGV) {
 local *D; opendir D,'.'; my @content = grep /\.(?:jpe*g|png|gif|tif|webp)/io, readdir(D); closedir D;
 foreach my $f (sort { substr($a,2) <=> substr($b,2) } @content) {
   next if ($f =~ /^${root}\b/);
-  #next unless ($f =~ /(?:image|download|unamed|pimgp|^I_[\da-f]|^f_)/);
+  next unless ($all || $f =~ /(?:image?|download|un+amed|pimgp|maxres|hqdef|^I_[\da-f]|^f_)|^[0-9a-f_]+n?\.|^x[^a-z]/);
   #next unless ($f =~ /^(?:IMG_\d|SF-)/);
   my ($bname,$ext) = ($1,$2) if $f =~ m/(.*)\.([^\.]+)$/;
       $bname = $fname unless $bname;
@@ -44,7 +51,7 @@ foreach my $f (sort { substr($a,2) <=> substr($b,2) } @content) {
     $n = sprintf "dup/${root}-%s (2).%s",$n2,$ext;
     }
   }
-  rename $f,$n;
+  rename $f,$n or die "$f: $!"
 }
 
 sleep 3;

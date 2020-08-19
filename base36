@@ -13,6 +13,8 @@ while (@ARGV && $ARGV[0] =~ m/^-/)
   if (/^-v(?:erbose)?/) { $verbose= 1; }
   elsif (/^-d(?:ec)?/) { $decode= 1; }
   elsif (/^-(?:qm?|no?h)/) { $noh= 1; }
+  elsif (/^-k(?:mu?)/) { $kmu= 1; }
+  elsif (/^-k(?:2k?)/) { $k2= 1; }
   else                  { die "Unrecognized switch: $_\n"; }
 
 }
@@ -21,12 +23,16 @@ local $/ = undef;
 my $buf = <>;
 $buf = decode_mbase($buf) if ($decode);
 printf "buf: f%s\n",unpack'H*',$buf if ($verbose|$dbug);
-if ($noh) {
-   $buf = substr($buf,2) if (substr($buf,0,1) == "\01");
+if ($noh || $kmu) {
+   $buf = substr($buf,2) if (substr($buf,0,1) eq "\x01");
    printf "K%s\n",&encode_base36($buf);
+} elsif ($k2) {
+   $buf = "\x01\x72".$buf;
+   printf "k%s\n",lc &encode_base36($buf);
 } else {
    printf "k%s\n",lc &encode_base36($buf);
 }
+printf "b16: f%s\n",unpack'H*',$buf if $verbose;
 
 exit $?;
 
