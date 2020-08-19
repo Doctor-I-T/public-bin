@@ -34,8 +34,10 @@ print "key: $key\n" if $all;
 
 # ----------------------------------------------------------------
 # decode data (keep only the binary-hash value
+my $ns = 'urn:kiverse:void';
 my $bindata = "\0";
 if ($key =~ m/^Qm/) {
+ $ns = 'urn:ipns:'.$key;
  $bindata = &decode_base58($key);
  printf "mh58: %s (%uc, %uB) : f%s...\n",$key,length($key),
         length($bindata), substr(unpack('H*',$bindata),0,11) if $dbug;
@@ -43,11 +45,12 @@ if ($key =~ m/^Qm/) {
  printf "bin: %s\n",unpack'H*',$bindata if $all;
 # ----------------------------------------------------------------
 } elsif ($key =~ m/^z/) {
+ $ns = 'urn:ipfs:'.$key;
  $bindata = &decode_base58(substr($key,1));
  printf "zb58: %s (%uc, %uB) : f%s...\n",$key,length($key),
  length($bindata), substr(unpack('H*',$bindata),0,11) if $dbug;
  my $cid = substr($bindata,0,2);
- if ($cid eq "\x01\x55" || $cid eq "\x01\x70") {
+ if ($cid eq "\x01\x55" || $cid eq "\x01\x70" || $cid eq "\x01\x72") {
    #my $header = substr($bindata,0,4);
    $bindata = substr($bindata,4);
  } else {
@@ -56,9 +59,10 @@ if ($key =~ m/^Qm/) {
 printf "sha2: f%s\n",unpack('H*',$bindata) if $dbug;
 # ----------------------------------------------------------------
 } else { # if key is plain text ... do a sha2 on it
+ $ns = 'urn:holo*:'.$key;
   $key =~ s/\\n/\n/g;
   $key .= ' '.join' ',@ARGV if (@ARGV);
-  $bindata = &hashr('SHA-256',1,$key); # SHA-256 if cleartext !
+  $bindata = &khash('SHA256',$key); # SHA256 if cleartext !
   printf "sha2(%s): %s\n",$key,unpack('H*',$bindata) if $dbug;
 }
 # ----------------------------------------------------------------
@@ -71,6 +75,9 @@ my $qmDICT = 'QmT3CaqFDZWQb2aNYCHMRQYLVEHS2Z5huDFQBoTYnHoSm8';
 my $sha16 = unpack('H*',$bindata);
 my $id7 = substr($sha16,0,7);
 printf "id7: %s\n",$id7 if $all;
+
+my $nid = &get_nid('urn:ipns:'+$key);
+printf "nid: %s\n",$nid;
 
 my $fnamelist = &load_qmlist('fnames');
 my $lnamelist = &load_qmlist('lnames');
@@ -209,7 +216,44 @@ sub decode_base32 {
   my $bin = MIME::Base32::decode($_[0]);
   return $bin;
 }
+# --------------------------------------------
+sub encode_base36 {
+  use Math::BigInt;
+  use Math::Base36 qw();
+  my $n = Math::BigInt->from_bytes(shift);
+  my $k36 = Math::Base36::encode_base36($n,@_);
+  #$k36 =~ y,0-9A-Z,A-Z0-9,;
+  return $k36;
+}
+sub decode_base36 {
+  use Math::BigInt;
+  use Math::Base36 qw();
+  #$k36 = uc($_[0])
+  #$k36 =~ y,A-Z0-9,0-9A-Z;
+  my $n = Math::Base36::decode_base36($_[0]);
+  my $bin = Math::BigInt->new($n)->as_bytes();
+  return $bin;
+}
 # -----------------------------------------------------------------------
+sub get_nid { # namespace id
+ # 13 char of base36(sha256)
+ my $s = shift;
+ my $sha2 = &khash('SHA256',$s);
+ my $ns36 = &encode_base36($sha2);
+ my $nid = substr($ns36,0,13);
+ return lc $nid;
+}
+# --------------------------------------------
+sub khash { # keyed hash
+   use Crypt::Digest qw();
+   my $alg = shift;
+   my $data = join'',@_;
+   my $msg = Crypt::Digest->new($alg) or die $!;
+      $msg->add($data);
+   my $hash = $msg->digest();
+   return $hash;
+}
+# --------------------------------------------
 sub hashr {
    my $alg = shift;
    my $rnd = shift;
