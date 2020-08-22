@@ -1,6 +1,7 @@
 #
 
 # git commit and push
+# while setting a bot name for commit's username
 domain='healthium.gq'
 
 if echo $0 | grep -q '/'; then
@@ -15,6 +16,7 @@ if [ "x$1" != 'x' ]; then
   git add $*
 fi
 
+find . -size 0 -name "*.*~1" -exec mv -n {} $HOME/.vim/birthed \;
 find . -name "*.*~*" -delete
 
 gitid=$(git rev-parse --short HEAD)
@@ -25,15 +27,19 @@ ver=$(perl -S version -a $0 | xyml scheduled)
 echo ver: $ver
 
 qm=$(ipfs --offline add -Q -r -n . )
-if git config user.name | grep -q michel; then
-user=michelc
+
 eval $(perl -S fullname.pl -a $qm | eyml)
+if git config user.name | grep -q '^michel'; then
+user=michelc
+export GIT_COMMITTER_NAME="Michel"
+export GIT_COMMITTER_EMAIL="michel@ocean"
+else
 git config user.name "$fullname"
 git config user.email $user@$domain
 export GIT_COMMITTER_NAME="$fullname"
 export GIT_COMMITTER_EMAIL="$email"
-
 fi
+
 echo "gituser: $(git config user.name) <$(git config user.email)>"
 tag=$(echo -n "$user@gradual.gq" | ipfs add -Q --raw-leaves --hash identity --cid-base=base58btc)
 
@@ -43,11 +49,14 @@ date=$(date +%D);
 time=$(date +%T);
 echo "commit msg ?"
 read ans
-IFS='' read -d '' msg <<EOT
+#IFS='' read -d '' msg <<EOT ! works only w/ bash
+msg="$(cat <<EOT
 $ver $time: ${ans:-commit} on $date ~ $firstname $lni.
 qm: $qm
 tag: $tag
+user: $user
 EOT
+)"
 echo "msg: $msg"  | sed -e '2,$s/^/  /'
 
 if git commit -m "$msg" --author "$user <$user@gradual.gq>"; then
@@ -60,12 +69,13 @@ echo $tic: $gitid >> revs.log
 fi
 
 # test if tag $ver exist ...
+remote=$(git rev-parse --abbrev-ref @{upstream} |cut -d/ -f 1)
 if git ls-remote --tags | grep "$ver"; then
-git push --delete origin "$ver"
+git push --delete $remote "$ver"
 fi
 fi
 echo "git push : "
-git push --follow-tags origin $branch
+git push --follow-tags $remote $branch
 echo .
 
 
