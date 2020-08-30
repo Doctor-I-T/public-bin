@@ -1,0 +1,48 @@
+#!/usr/bin/perl
+
+# --- # meta for dee:
+# name: dee
+# purpose: delayed tee !
+# usage: uniq $file | dee $file
+# ---
+
+my $buf = '';
+local $/ = "\n";
+# -----------------------------------
+# -- Options parsing ...
+#
+my $append = 0;
+my $quiet = 0;
+while (@ARGV && $ARGV[0] =~ m/^-/)
+{
+  $_ = shift;
+  #/^-(l|r|i|s)(\d+)/ && (eval "\$$1 = \$2", next);
+  if (/^--?a(?:ppend)?/) { $append= 1; }
+  elsif (/^--?q(?:uiet)?/) { $quiet= 1; }
+  else { die "Unrecognized switch: $_\n"; }
+
+}
+#understand variable=value on the command line...
+eval "\$$1='$2'"while $ARGV[0] =~ /^(\w+)=(.*)/ && shift;
+# -----------------------------------
+while (<STDIN>) {
+  $buf .= $_;
+  print unless $quiet;
+}
+close STDIN;
+# -----------------------------------
+my $file = $ARGV[0] || '/tmp/dee.log';
+local *F;
+if ($append) {
+   open F,'>>',$file;
+} else {
+   open F,'>',$file;
+}
+print F $buf;
+close F;
+# -----------------------------------
+exit $?;
+
+1; # $Source: /my/perl/scripts/dee.pl $
+
+
