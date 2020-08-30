@@ -1,0 +1,20 @@
+#!/usr/bin/perl
+
+# --- # meta for uni9
+# name: uni9
+# details: a uniq (for 733T that doesn't need a sort !
+# usage: uni9 $file | more
+# ---
+
+my %seen = ();
+local $/ = "\n";
+while (<>) {
+   if ($_ =~ /^$/) {
+      print "\n";
+   } else {
+      print $_ unless $seen{$_}++;
+   }
+}
+exit $?;
+1; # $Source: /my/perl/scripts/uni9.pl $
+
