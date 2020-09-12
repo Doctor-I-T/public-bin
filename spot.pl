@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-BEGIN { our $rel='Qma1EdRdQS6a5aNekaGMaedxfz4qwUfdLathRaGELmz8C5';
+BEGIN { our $rel='QmUWQiJ4j9rFBJh15GtVymqo7qSbJCpZjBs9fCE92yAXSK';
    if (! defined $ENV{SITE} || ! -e $ENV{SITE}.'/lib/IPMS.pm') {
       if (! -e  "$ENV{HOME}/.gqtools/$rel") {
          printf "// installing .gqtools ...";
