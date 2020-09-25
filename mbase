@@ -100,7 +100,7 @@ printf "b16: f%s\n",$b16;
 printf "b32: B%s\n",$b32;
 printf "b32z: h%s\n",lc$b32z;
 printf "b36: k%s\n",lc$b36;
-printf "b39: *%s*\n",&encode_basen($bin,39);
+printf qq'b39: "*%s*"\n',&encode_basen($bin,39);
 printf "b43: |%s|\n",$b43;
 printf "b58: z%s\n",$b58;
 printf "b58f: Z%s\n",$b58f;

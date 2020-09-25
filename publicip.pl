@@ -1,6 +1,9 @@
 #!/usr/bin/perl
 # $Id: publicip.pl,v 0.0 2018/04/08 07:23:57 michelc Exp $
 #BEGIN { $SITE=$ENV{SITE}; push @INC,$SITE.'\lib' }
+#
+#
+# TODO: rework broken part of the file...
 
 use strict;
 # $ENV{TZ} = 'PST8PDT';

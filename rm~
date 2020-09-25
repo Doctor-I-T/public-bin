@@ -11,8 +11,10 @@ eregf=$HOME/etc/mutables/qmedited.log
 
 tic=$(date +%s)
 export IPFS_PATH=$HOME/ipfs/.../BACKUP
-for f in *~?; do
-  mf=${f%~1}
+
+for ff in $(find . -maxdepth 2 -name "*~*"); do
+  f=${ff##*/}
+  mf=${ff%~1}
 
   if [ -e ${mf}~1 ]; then
   device=$(df --output=source ${mf}~1 | tail -1)
@@ -29,7 +31,7 @@ for f in *~?; do
   fi
 
   # track backup file
-  bf=$HOME/.vim/backups/${mf}~
+  bf=$HOME/.vim/backups/${mf##*/}~
   if [ -e $bf ]; then
   bs=$(stat -t $bf | sed -e "s,$HOME/.vim/backups/,,")
   qmb=$(ipfs add -Q $bf)

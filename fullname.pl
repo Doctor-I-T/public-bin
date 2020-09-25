@@ -11,6 +11,7 @@ while (@ARGV && $ARGV[0] =~ m/^-/)
   $_ = shift;
   #/^-(l|r|i|s)(\d+)/ && (eval "\$$1 = \$2", next);
   if (/^-v(?:erbose)?/) { $verbose= 1; }
+  elsif (/^-d(?:e?bug)?/) { $dbug= 1; }
   elsif (/^-a(?:ll)?/) { $all= 1; }
   elsif (/^-y(?:ml)?/) { $yml= 1; }
   else                  { die "Unrecognized switch: $_\n"; }
@@ -76,7 +77,8 @@ my $sha16 = unpack('H*',$bindata);
 my $id7 = substr($sha16,0,7);
 printf "id7: %s\n",$id7 if $all;
 
-my $nid = &get_nid('urn:ipns:'+$key);
+printf "ns: %s\n",$ns if $all ;
+my $nid = &get_nid($ns);
 printf "nid: %s\n",$nid;
 
 my $fnamelist = &load_qmlist('fnames');

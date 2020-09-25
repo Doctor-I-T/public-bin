@@ -1,7 +1,8 @@
 #
 
 # --- # meta
-# intention: remove a content from its hash (qm)
+# intention: |-
+#  remove a content from its hash (qm)
 # usage: |-
 #  qm=QmecLmMZDjT16C1kWPHVmCeyrv6yPvUUii2fRRyBp4zW95
 #  qmrm.sh $qm

@@ -14,7 +14,7 @@ echo "--- ${0##*/}"
 tic=$(date +%s)
 qm=$(ipfs add -Q -n -r .)
 if [ ! -e qm.log ]; then
-  echo "# qm log for $(pwd -P)" > qm.log
+  echo "# qm log for $(pwd -L)" > qm.log
 fi
 echo $tic: $qm
 echo $tic: $qm >> qm.log

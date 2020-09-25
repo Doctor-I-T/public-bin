@@ -1,0 +1,54 @@
+#!/usr/bin/perl
+
+my $json;
+use JSON qw(decode_json);
+if (0) {
+   local $/ = undef;
+   my $buf = <>;
+   $json = &decode_json($buf);
+
+} else {
+   local $/ = undef;
+   my $buf = <STDIN>;
+   $json = &decode_json($buf);
+}
+
+#printf STDERR "json: %s...\n",Dump($json);
+if (@ARGV) {
+   foreach (@ARGV) {
+      if (ref($json->{$_}) eq 'HASH') {
+         print Dump($json->{$_}),"\n";
+      } else {
+         my $value = $json->{$_};
+         if ($_ =~ m/\-/) {
+            $_ =~ s/^(.)/\u\1/;
+            $_ =~ s/-(.)/\u\1/g;
+         }
+         $value =~ s/'/\\x27/g;
+         $value =~ s/\`/\\x60/g; # /!\ make it safe
+         printf qq"%s='%s';\n",$_,$value;
+      }
+   }
+} else {
+
+   foreach (sort keys %$json) {
+      my $value = $json->{$_};
+      if ($_ =~ m/\-/) {
+        $_ =~ s/^(.)/\u\1/;
+        $_ =~ s/-(.)/\u\1/g;
+      }
+      $value =~ s/\`/\\x60/g; # /!\ make it safe
+      if ($value =~ m/\$/) {
+         $value =~ s/'/\\x27/g;
+         printf "%s='%s';\n",$_,$value;
+      } else {
+         $value =~ s/"/\\x22/g;
+         printf qq'%s="%s";\n',$_,$value;
+      }
+      
+   }
+
+}
+
+exit $?;
+1;

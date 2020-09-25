@@ -1,5 +1,13 @@
 #!/usr/bin/perl
 
+# intent: help decode protobuf
+#
+my $usage = q(
+  qm=QmexGMyiZ7vviW7XxBt98dKks2AdiLH7dE24y4Yym9nU91
+  ipfs block get $qm > file.pb
+  perl -S viewprotob.pl file.pb
+);
+
 my $file = shift;
 
 local *F; open F,'<',$file;
@@ -42,14 +50,14 @@ sub unfoldf {
   my $z = unpack'C',$c;
   my $f = $z>>3;
   my $t = $z&0x7;
-  printf "buf: %s 0x%02x ...\n",unpack('B*',$c),$z;
+  printf "#buf: %s 0x%02x ...\n",unpack('B*',$c),$z;
   if ($t == 2) {
     my $s = &readfvi(PB);
     my $size = &uvarint($s); 
     printf "hdr: f%d.t%d ",$f,$t;
     printf "size=%d (0x%s)\n",$size,unpack'H*',$s;
     read(PB,$payload,$size);
-    printf "data: f.%s\n",unpack'H*',$payload;
+    printf "data: f.%s m.%s\n",unpack('H*',$payload),&encode_base64m($payload);
     push @data, $payload;
     &unfold($payload);
   } else {
@@ -65,7 +73,7 @@ sub unfold {
      my $z = unpack'C',$c;
      my $f = $z>>3;
      my $t = $z&0x7;
-     printf ". buf: %s %02x %s\n",unpack('B*',$c),$z,unpack'H*',$buf;
+     printf "# buf: %s %02x %s\n",unpack('B*',$c),$z,unpack'H*',$buf;
      if ($t == 2) {
         my $s = &readvi($buf);
         my $size = &uvarint($s); 
@@ -138,4 +146,12 @@ sub uvarint {
   return $i;
 }
 # -----------------------------------------------------
+sub encode_base64m {
+  use MIME::Base64 qw();
+  my $m64 = MIME::Base64::encode_base64($_[0],'');
+  return $m64;
+}
+# -----------------------------------------------------
 
+
+1;

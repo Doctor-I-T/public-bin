@@ -59,7 +59,7 @@ EOT
 )"
 echo "msg: $msg"  | sed -e '2,$s/^/  /'
 
-if git commit -m "$msg" --author "$user <$user@gradual.gq>"; then
+if git commit -a -m "$msg" --author "$user <$user@gradual.gq>"; then
 gitid=$(git rev-parse HEAD)
 git tag -f -a $ver -m "tagging $gitid on $date"
 #echo gitid: ${gitid:0:9} # this is bash!

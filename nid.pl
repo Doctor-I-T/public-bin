@@ -1,22 +1,36 @@
 #!/usr/bin/perl
 
-# script to compute namespace identifier for uri
+# --- meta:
+# purpose: script to compute namespace identifier for uri
 #
 # usage: perl -S nid.pl urn:domain:space-uniq-name-within-domain
 #
-# an uri is an uniq ressource identifier used
-# to create the name space id
+# details: |-
+#  an uri is an uniq ressource identifier used
+#  to create the name space id
 #
-# requirement space-uniq-name-within-domain need to be permanent and global !
+#  requirement space-uniq-name-within-domain need to be permanent and global !
 #
-# it is a sort of permanent global address for the namespace
+#  it is a sort of permanent global address for the namespace
 #
-# ex: urn:ipns:QmdHmC48ipAsKSQcaJZ4X6b48b5mxtN5NjNEVrLbTGF8Un
+#  ex: urn:ipns:QmdHmC48ipAsKSQcaJZ4X6b48b5mxtN5NjNEVrLbTGF8Un
+#  ---
+
+my $yml = 0;
+if ($ARGV[0] eq '-y') {
+  $yml=1;
+  shift;
+}
 
 my $uri = shift;
 
 my $nid = &get_nid($uri);
-printf "nid: %s\n",$nid;
+if ($yml) {
+   printf "--- %s\n",$0;
+   printf "nid: %s\n",$nid;
+} else {
+   print $nid;
+}
 exit $?;
 
 # ----------------------------------
@@ -51,5 +65,5 @@ sub encode_base36 {
 }
 # ----------------------------------
 
-1;
+1; # $Source: /my/perl/scripts/nid.pl $
 
