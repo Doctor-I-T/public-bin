@@ -28,7 +28,7 @@ gittop=$(git rev-parse --show-toplevel) && echo top: $gittop
 gitid=$(git rev-parse --short HEAD)
 gituser
 commit_msg
-git commit -a -uno -m "$msg" --author=$USER
+git commit -a -uno -m "$msg" --author=$USER -s
 
 git tag -f -a $ver -m "tagging $gitid on $date"
 # test if tag $ver exist ...
