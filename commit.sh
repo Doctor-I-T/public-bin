@@ -10,7 +10,7 @@ commit_msg()
 qm=$(git status -v -uno | ipfs add -Q -pin=false)
 ns=$(perl -S nid.pl "urn:ipfs:$qm")
 msg=$(cat <<EOM
-daily check-in $ver ns:$nid ($date)
+auto-commit $ver ns:$ns ($date)
 top: $gittop
 `git status -s -b -uno --ignore-submodules=untracked`
 parent: $gitid
