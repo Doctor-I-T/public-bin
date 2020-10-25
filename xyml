@@ -14,19 +14,22 @@ my $yml = Load($buf);
 my $LF = ($#ARGV > 0) ? "\n" : '';
 if (@ARGV) {
 foreach (@ARGV) {
-  my $p = rindex($_,'.');
-  my $key=substr($_,0,$p);
-  my $subkey=substr($_,$p+1);
-  #printf "key: %s\n",$key;
-  #printf "subkey: %s\n",$subkey; exit;
-  if (ref($yml->{$key}) eq 'ARRAY') {
-    print $yml->{$key}[$subkey],$LF;
-  } elsif (ref($yml->{$key}) eq 'HASH') {
-    print $yml->{$key}{$subkey},$LF;
-  } elsif (ref($yml->{$_}) eq 'HASH') {
-    print Dump($yml->{$_}),$LF;
+  my $a = $_;
+  $a =~ s/^(\w+)/{$1}/;
+  $a =~ s/\.(\w+)/{$1}/g;
+  $a = '$yml->'.$a;
+  if ($debug) {
+  printf "a: %s\n",$a;
+  }
+  my $ref = eval("ref($a)");
+  if ($ref eq '') {
+     printf "%s",eval "$a"; 
+  } elsif ($ref eq 'ARRAY') {
+     printf "%s".$LF,join',',eval("@{$a}");
+  } elsif ($ref eq 'HASH') {
+     print Dump(eval("$a")),$LF;
   } else {
-    print $yml->{$_},$LF;
+     printf "ref(%s): %s\n",$_,eval "ref($a)"; 
   }
 }
 } else {
