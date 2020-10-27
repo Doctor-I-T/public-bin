@@ -2,6 +2,13 @@
 
 our $dbug=0;
 our $cached=$ENV{DICT} || $ENV{HOME}.'/.cache/fullname.pl/qmDict';
+our $domains = [qw(
+           healthium.gq chii.ml kintm.gq holosphere.gq keysm.ml gradual.gq
+           bigtm.gq blockringtm.gq bringtm.ml clockchain.tk csap.ml
+           current-see.ml dids.ml evolutiontm.tk gatetm.tk gcfs.ml gctm.gq
+           gctm.ml glog.gq happycoin.gq happycoin.cf hellodoc.tk hltm.ml
+    )];
+
 #--------------------------------
 # -- Options parsing ...
 #
@@ -12,6 +19,8 @@ while (@ARGV && $ARGV[0] =~ m/^-/)
   #/^-(l|r|i|s)(\d+)/ && (eval "\$$1 = \$2", next);
   if (/^-v(?:erbose)?/) { $verbose= 1; }
   elsif (/^-d(?:e?bug)?/) { $dbug= 1; }
+  elsif (/^--?au(?:thor)?/) { $author= 1; }
+  elsif (/^--?b(?:y)?/) { $by= 1; }
   elsif (/^-a(?:ll)?/) { $all= 1; }
   elsif (/^-y(?:ml)?/) { $yml= 1; }
   else                  { die "Unrecognized switch: $_\n"; }
@@ -60,7 +69,7 @@ if ($key =~ m/^Qm/) {
 printf "sha2: f%s\n",unpack('H*',$bindata) if $dbug;
 # ----------------------------------------------------------------
 } else { # if key is plain text ... do a sha2 on it
- $ns = 'urn:holo*:'.$key;
+  $ns = 'urn:holo*:'.$key;
   $key =~ s/\\n/\n/g;
   $key .= ' '.join' ',@ARGV if (@ARGV);
   $bindata = &khash('SHA256',$key); # SHA256 if cleartext !
@@ -79,15 +88,40 @@ printf "id7: %s\n",$id7 if $all;
 
 printf "ns: %s\n",$ns if $all ;
 my $nid = &get_nid($ns);
-printf "nid: %s\n",$nid;
+printf "nid: %s\n",$nid if $all;
 
 my $fnamelist = &load_qmlist('fnames');
 my $lnamelist = &load_qmlist('lnames');
 
+printf "sha16: f%s\n",$sha16 if $all;
 my @fullname = &fullname($bindata);
 #printf "%s.\n",YAML::Syck::Dump(\@fullname) if $dbug;
+
+my $firstname = $fullname[0];
+my $midlename = $fullname[1];
+my $lastname = $fullname[-2];
+my $maidenname = $fullname[-1];
+
+my $lni = substr($fullname[-2],0,1);
+my $mni = substr($fullname[1],0,1);
+
+
+my $sn = unpack'N',substr($bindata,-5,4);
+my $domain = $domains->[$sn%scalar(@$domains)];
+my $user = sprintf'%s%s',lc(substr($firstname,0,1)),lc($lastname);
+my $email = sprintf'%s@%s',$user,$domain;
+my $tag = &get_tag($email);
+
+my $ymail = sprintf'%s+%s@%s',$user,$id7,'ydentity.ml';
+
 if ($all) {
-printf "fullname: %s %s. %s\n",$fullname[0],substr($fullname[1],0,1),$fullname[-2];
+printf "fullname: %s %s. %s\n",$firstname,$mni,$lastname;
+printf qq'by: "%s (via %s aka %s %s. %s)"\n',lc($ENV{USER}),$nid,$firstname,$mni,$lastname;
+printf qq'author: "%s %s. %s <%s+%s@%s>"\n',$firstname,$mni,$lastname,$user,$nid,$domain;
+} elsif ($author) {
+printf "%s %s. %s <%s+%s@%s>\n",$firstname,$mni,$lastname,$user,$nid,$domain;
+} elsif ($by) {
+printf "by: %s (via %s aka %s %s. %s)\n",lc($ENV{USER}),$nid,$firstname,$mni,$lastname;
 } else {
 printf "%s %s. %s\n",$fullname[0],substr($fullname[1],0,1),$fullname[-2];
 }
@@ -102,8 +136,11 @@ if ($all) {
    printf "lni: %s\n",uc(substr($fullname[-2],0,1));
    printf "mni: %s\n",uc(substr($fullname[1],0,1));
    printf "fni: %s\n",uc(substr($fullname[0],0,1));
-   printf "user: %s%s\n",lc(substr($fullname[0],0,1)),lc($fullname[-2]);
-   printf "email: %s%s+%s\@%s\n",lc(substr($fullname[0],0,1)),lc($fullname[-2]),$id7,'ydentity.ml';
+   printf "sn: %s\n",$sn;
+   printf "user: %s\n",$user;
+   printf "email: %s\n",$email;
+   printf "ymail: %s+%s\@%s\n",$user,$id7,'ydentity.ml';
+   printf "tag: %s\n",$tag;
 }
 
 exit $?;
@@ -236,6 +273,14 @@ sub decode_base36 {
   my $bin = Math::BigInt->new($n)->as_bytes();
   return $bin;
 }
+# -----------------------------------------------------------------------
+sub get_tag { # plain ident-hash !
+  my $s = shift;
+  my $vi = &varint(length($s));
+  my $tag = 'z'.&encode_base58(pack('H*','015500').$vi.$s);
+  return substr($tag,0,33).'z'x(length($tag)-33);
+}
+
 # -----------------------------------------------------------------------
 sub get_nid { # namespace id
  # 13 char of base36(sha256)

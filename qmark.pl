@@ -4,6 +4,10 @@
 # intent:
 #   shards bookmarks (qmrks) in timed list of urls
 #   using the hash (base36) of the url
+#
+# usage:
+#  xclip -o | perl -S qmark.pl
+
 
 if (@ARGV) {
 $QMARKSDIR=shift;
@@ -26,7 +30,9 @@ while (<STDIN>) {
       $what =~ s/\s+/ /g;
       $url =~ s/\)/%29/g;
       $what =~ s/]/%5D/g;
-   
+
+      $what = $. unless $what !~ m/^\s*$/;
+
       # command to get the content !
       my $hash = &khash('SHA256','curl -sL ',$url);
       my $h36 = &encode_base36($hash);

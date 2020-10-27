@@ -30,14 +30,17 @@ qm=$(ipfs --offline add -Q -r -n . )
 
 eval $(perl -S fullname.pl -a $qm | eyml)
 if git config user.name | grep -q '^michel'; then
-user=michelc
+user=$USER
+hostname=$(hostname)
+git config committer.name "Michel C."
+git config committer.email "$user@$hosname"
 export GIT_COMMITTER_NAME="Michel"
-export GIT_COMMITTER_EMAIL="michel@ocean"
+export GIT_COMMITTER_EMAIL="michel@$hostname"
 else
 git config user.name "$fullname"
-git config user.email $user@$domain
-export GIT_COMMITTER_NAME="$fullname"
-export GIT_COMMITTER_EMAIL="$email"
+git config user.email "$user@$domain"
+export GIT_AUTHOR_NAME="$fullname"
+export GIT_AUTHOR_EMAIL="$email"
 fi
 
 echo "gituser: $(git config user.name) <$(git config user.email)>"
@@ -59,7 +62,8 @@ EOT
 )"
 echo "msg: $msg"  | sed -e '2,$s/^/  /'
 
-if git commit -a -m "$msg" --author "$user <$user@gradual.gq>"; then
+#if git commit -a -m "$msg" --author "$fullname <$user@gradual.gq>"; then
+if git commit -a -m "$msg"; then
 gitid=$(git rev-parse HEAD)
 git tag -f -a $ver -m "tagging $gitid on $date"
 #echo gitid: ${gitid:0:9} # this is bash!

@@ -1,0 +1,38 @@
+#
+
+# intent: 
+#  having a git that works from any location
+#
+#  usage
+#  git-commit <dir|file> -m "$msg"
+
+pgm=${0##*/}
+cmd=$(echo $pgm | cut -d'-' -f 2)
+
+if [ $cmd == 'cmd' ]; then
+  cmd=$1; shift
+fi
+  
+set -e
+
+if [ $cmd == 'commit' -o $cmd == 'push' ]; then
+  dir=$1; shift
+  if [ ! -d $dir ]; then
+    dir=${dir%/*}
+  fi
+  \cd $dir
+  git $cmd $*
+else
+for last in "$@"; do true; done
+if echo "$last" | grep -q -e '^/'; then
+if test -e $last; then
+  dir=${last%/*}
+  \cd $dir
+  echo "cd $(pwd -P); git $cmd $*"
+fi
+fi
+
+ 
+/usr/bin/git $*
+
+fi

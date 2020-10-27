@@ -16,6 +16,11 @@ for ff in $(find . -maxdepth 2 -name "*~*"); do
   f=${ff##*/}
   mf=${ff%~1}
 
+  if grep -e 'PrivK' -e '|encrypt}}' $ff 1>/dev/null || echo $f | grep '\.sec'; then
+    echo info: backup-n-removal skipped for $ff
+    continue
+  fi
+
   if [ -e ${mf}~1 ]; then
   device=$(df --output=source ${mf}~1 | tail -1)
   in=$(stat -c %i ${mf}~1)
@@ -29,6 +34,7 @@ for ff in $(find . -maxdepth 2 -name "*~*"); do
   echo "rm $mf~1"
   rm ${mf}~1
   fi
+
 
   # track backup file
   bf=$HOME/.vim/backups/${mf##*/}~

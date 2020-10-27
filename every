@@ -1,0 +1,35 @@
+#!/usr/bin/perl
+# vim: sw=3 ai et
+
+my $set = 0;
+my @list = ();
+foreach my $f (@ARGV) {
+   if ($set) { push @xpats, $f; next; }
+   if ($f =~ m/^(?:but|BUT)$/) { $set = 1; next; }
+   else { push @list, $f; }
+}
+print STDERR qq'# note: skipped files are marked w/ "#"\n';
+
+my @included = ();
+my @excluded = ();
+foreach my $f (@list) {
+   my $inc = 1;
+   foreach my $p (@xpats) {
+      if ($f =~ m/$p/) {
+        print STDERR "# ",$f,"\n";
+        push @excluded, $f; $inc = 0;
+      }
+   }
+   if ($inc) {
+     print $f,"\n";
+     push @included, $f
+   }
+}
+
+# for my $f (@included) {
+# }
+
+# for my $f (@excluded) {
+# }
+
+1; # $Source: /my/perl/scripts/every.pl$

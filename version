@@ -35,13 +35,13 @@ my @ver = &version($file);
 my $age = $ver[0];
 my ($r,$m) = &rev(time);
 my $hdr = sprintf "blob %u\0",(lstat($file))[7]; # GIT header
-my $commitid = &get_khash('SHA1',$hdr,$file);
-my $gitid = substr(unpack('H*',$commitid),0,7);
+my $githash = &get_khash('SHA1',$hdr,$file);
+my $gitshort = substr(unpack('H*',$githash),0,7);
 
 
 if ($all) {
    printf "file: %s\n",$file;
-   printf qq'gitid: %s\n',$gitid;
+   printf qq'gitshort: %s\n',$gitshort;
    printf qq'version: "%d.%.2f - %s"\n',@ver;
    printf qq'scheduled: "v%d.%.1f.%d" # (%s+%s)\n',int($age),int($r/10)/10,$r%10+$m,$r,$m;
 } elsif ($yml) {
