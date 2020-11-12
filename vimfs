@@ -1,0 +1,34 @@
+#
+
+if [ "x$1" == 'x-p' ]; then
+ # p option ...
+ popt=1
+ shift
+fi
+
+mfspath="$1"
+fname=${mfspath##*/}
+tmpf=/tmp/$fname
+pv=$(ipfs files stat --hash $mfspath 2>/dev/null)
+if [ "x$pv" != 'x' ]; then
+ ipfs files read $mfspath > $tmpf
+else
+ if [ "x$popt" != 'x' ]; then
+   ipfs files mkdir -p ${mfspath%/*} 2>/dev/null
+ fi
+ echo "# \$Source: $mfspath\$" > $tmpf
+ echo "# \$Date: $(date)\$" >> $tmpf
+ pv='~'
+fi
+#gvim --servername _MFS --remote-wait-tab-silent $tmpf
+vim $tmpf
+sed -i "s!\\\$\\(Previous\\): .*\\\$!\\\$\\1: $pv\\\$!" $tmpf
+qm=$(ipfs add -Q $tmpf)
+ipfs files rm $mfspath~ 2>/dev/null
+ipfs files mv $mfspath $mfspath~
+ipfs files cp /ipfs/$qm $mfspath
+ipfs files stat $mfspath
+
+
+exit $?; # $Source: /my/shell/scripts/vimfs$
+

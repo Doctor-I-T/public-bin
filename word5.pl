@@ -49,22 +49,67 @@ my $cidv,$mhash;
       $cidv = unpack'C',substr($bin,0,1);
       $mhash = ($cidv == 1) ? substr($bin,2) : $bin;
    }
+
+
+my $url = 'http://127.0.0.1:5001/api/v0/dag/get?arg='.$arg;
+my $content = &post_url($url);
+my $md6;
+my $sz = 4;
+if ($content !~ m'404') {
+  $md6 = unpack'H*',&khash('MD6',$content);
+} else {
+  $md6 = unpack'H*',&khash('MD6',$bin);
+}
+my $pn = hex(substr($md6,-$sz)); # use last sz nibble (default: 16-bit)
+
+
 my $binp = $bin; $binp =~ tr/\000-\034\134\177-\377/./;
 my $qm = &encode_base58($mhash);
 my $qm36 = &encode_base36($mhash);
 my $quint = &hex2quint(unpack'H*',$mhash);
-my $n = unpack'N',substr("\x00"x4 . $bin,-4);
+my $n = unpack'N',substr("\x00"x4 . $bin,-5,4);
+my $q = unpack'L',substr("\x00"x8 . $bin,-9,8);
 my $word5 = &word5($n);
+my $word206 = &word206($pn);
+my $word3710 = &word3710($q);
 
 printf "n: %s\n",$n;
+printf "pn: %s\n",$pn;
+printf "q: %s\n",$q;
 printf "arg: %s\n",$arg;
+printf "url: %s\n",$url;
+printf "content: |-\n%s\n",&indent(' 'x2,$content);
+printf "content64: %s\n",&encode_base64m($content,'');
+printf "md6: %s\n",$md6;
 printf "b16: %s\n",unpack'H*',$bin;
 printf "qm: %s\n",$qm;
 printf "qm36: %s\n",$qm36;
 printf "quint: %s\n",$quint;
 printf "word5: %s\n",$word5;
+printf "word206: %s\n",$word206;
+printf "word3710: %s\n",$word3710;
 
 exit $?;
+# -----------------------------------------------------------------------
+sub post_url {
+   my $url = shift;
+   use LWP::UserAgent qw();
+   my $ua = LWP::UserAgent->new();
+   my $resp = $ua->post($url);
+   warn "Couldn't get $url" unless defined $resp;
+   return $resp->decoded_content();
+}
+
+# -----------------------------------------------------------------------
+sub khash { # keyed hash
+   use Digest qw();
+   my $alg = shift;
+   my $data = join'',@_;
+   my $msg = Digest->new($alg) or die $!;
+      $msg->add($data);
+   my $hash = $msg->digest();
+   return $hash;
+}
 # -----------------------------------------------------------------------
 # 7c => 31b worth of data ... (similar density than hex)
 sub word5 { # 20^4 * 26^3 words (4.5bit per letters)
@@ -96,36 +141,58 @@ sub word5 { # 20^4 * 26^3 words (4.5bit per letters)
  }
  return $str;
 }
-sub word { # 20^4 * 6^3 words (25bit worth of data ...)
+sub word3710 { # 37^4 * 10^3 words (30bit worth of data...)
  use integer;
  my $n = $_[0];
- my $vo = [qw ( a ai au e i o oi ou u y )]; # 6
- my $cs = [qw ( b bl c cl d dl f fl g gl h j jl k kl l m n p pl q ql qu r rl s sl st t th tl v vl w x z zl )]; # 20
- my $vn = scalar(@vo);
- my $cn = scalar(@cn);
+ my $vo = [qw ( a ai au e i o oi ou u y )]; # 10
+ my $cs = [qw ( b bl c cl d dl f fl g gl h j jl k kl l m n p pl q ql qu r rl s sl st t th tl v vl w x z zl )]; # 37
+ my $vn = scalar(@{$vo});
+ my $cn = scalar(@{$cs});
  my $an = $cn + $vn;
+ #print "n: $n\n";
+ #print "cn: $cn\n";
+ #print "vn: $vn\n";
+ #print "an: $an\n";
 
  my $str = '';
  if (1 && $n < $an) {
- $str = (@$vo,@$cs)[$n];
+    $str = (@{$vo},@{$cs})[$n];
+    print "str: $str\n";
  } else {
- $n -= $vn;
- while ($n >= $cn) {
-   my $c = $n % $cn;
-      $n /= $cn;
-      $str .= $cs->[$c];
-   #print "cs: $n -> $c -> $str\n";
-      $c = $n % $vn;
-      $n /= $vn;
-      $str .= $vo->[$c];
-   #print "vo: $n -> $c -> $str\n";
+    $n -= $vn;
+    while ($n >= $cn) {
+       my $c = $n % $cn;
+       $n /= $cn;
+       $str .= $cs->[$c];
+       #print "cs: $n -> $c -> $str\n";
+       $c = $n % $vn;
+       $n /= $vn;
+       $str .= $vo->[$c];
+       #print "vo: $n -> $c -> $str\n";
 
- }
- if ($n > 0) {
-   $str .= $cs->[$n];
+    }
+    if ($n > 0) {
+       $str .= $cs->[$n];
+    }
  }
  return $str;
+}
+
+sub word206 { # 20^4 * 6^3 words (25bit worth of data ...)
+ my $n = $_[0];
+ my $vo = [qw ( a e i o u y )]; # 6
+ my $cs = [qw ( b c d f g h j k l m n p q r s t v w x z )]; # 20
+ my $str = '';
+ while ($n >= 20) {
+   my $c = $n % 20;
+      $n /= 20;
+      $str .= $cs->[$c];
+      $c = $n % 6;
+      $n /= 6;
+      $str .= $vo->[$c];
  }
+ $str .= $cs->[$n];
+ return $str;	
 }
 # -----------------------------------------------------------------------
 sub hex2quint {
@@ -152,6 +219,11 @@ sub u16toq {
    return scalar reverse $s;
 }
 # -----------------------------------------------------
+sub encode_base64m {
+  use MIME::Base64 qw();
+  my $b64 = MIME::Base64::encode_base64($_[0],'');
+  return $b64;
+}
 sub encode_base58 { # btc
   use Math::BigInt;
   use Encode::Base58::BigInt qw();
@@ -205,7 +277,14 @@ sub decode_base64m {
   my $bin = MIME::Base64::decode_base64($_[0]);
   return $bin;
 }
-
 # -----------------------------------------------------
+sub indent {
+  my $lead = shift;
+  my $buf = shift;
+  local $/ = "\n";
+  $buf =~ s/^/$lead/mg;
+  return $buf;
+}
+
 #
 1; # --------------------------------------------------------------------

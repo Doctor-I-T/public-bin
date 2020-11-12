@@ -31,6 +31,8 @@ my $buf = <STDIN>;
 local $/ = "\n";
 chomp $buf;
 
+$buf =~ s,.*/ip[fnm]s/,, if ($buf =~ m,/ip[fnm]/,);
+
 my $bin = '';
 if ($dec) {
    if ($buf =~ m/^Qm/) {
