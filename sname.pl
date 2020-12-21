@@ -21,7 +21,7 @@ my $dirName = shift;
 my $shortName = &sname($dirName);
 my $longName = &lname($dirName);
 print $shortName;
-print L $longName,"\n";
+printf L "%u: %s\n",time(),$longName;
 
 close(L);
 exit $?;

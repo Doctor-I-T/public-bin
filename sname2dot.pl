@@ -30,7 +30,8 @@ my @edges = ();
 while(<L>) {
   next if /^#/;
   chomp;
-  my $d = $_;
+  my ($ts,$d) = (split(/:\s+/,$_,2));
+  #printf "ts: %s (%s)\n",$ts,$d;
      $d =~ s/\~/$ENV{HOME}/;
   if ($traj[-1] ne $d) { # suppress doubles !
     push @traj, $d;
