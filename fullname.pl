@@ -43,7 +43,7 @@ $key = 'QmboiLojgoteK2P1NWhAjUutsgCpBmgpbrD1iKDAjSWxf4' unless $key;
 print "key: $key\n" if $all;
 
 # ----------------------------------------------------------------
-# decode data (keep only the binary-hash value
+# decode data (keep only the binary-hash value)
 my $ns = 'urn:kiverse:void';
 my $bindata = "\0";
 if ($key =~ m/^Qm/) {
@@ -68,6 +68,19 @@ if ($key =~ m/^Qm/) {
  }
 printf "sha2: f%s\n",unpack('H*',$bindata) if $dbug;
 # ----------------------------------------------------------------
+} elsif ($key =~ m/^f/) {
+ my $k16 = substr($key,1);
+  $ns = 'urn:hex:'.$k16;
+  $bindata = pack'H*',$k16;
+  my $cid = substr($bindata,0,2);
+  if ($cid eq "\x01\x55" || $cid eq "\x01\x70" || $cid eq "\x01\x72") {
+     #my $header = substr($bindata,0,4);
+     $bindata = substr($bindata,4);
+  } elsif($cid eq "\x12\x20") {
+     $bindata = substr($bindata,2); # remove header
+  } 
+
+
 } else { # if key is plain text ... do a sha2 on it
   $ns = 'urn:holo*:'.$key;
   $key =~ s/\\n/\n/g;
@@ -78,6 +91,7 @@ printf "sha2: f%s\n",unpack('H*',$bindata) if $dbug;
 # ----------------------------------------------------------------
 our $wordlists;
 my $qmDICT = 'QmT3CaqFDZWQb2aNYCHMRQYLVEHS2Z5huDFQBoTYnHoSm8';
+my $qmDICT = 'QmNYxFBCcUKEmjLF578pCKvrFHDfYdTtwZaLm8byBhFVHG';
 #y $etcdir = __FILE__; $etcdir =~ s,/bin/\w+$,/etc,;
 #y $DICT = (exists $ENV{DICT}) ? $ENV{DICT} : $etcdir; # '/usr/share/dict';
 #rintf "// DICT=%s\n",$DICT if $dbug;
@@ -195,7 +209,7 @@ sub load_qmlist {
    my $wl = scalar @$wordlist;
    if ($wl < 1) {
       my $buf;
-      my $DICT = $ENV{DICT} || $ENV{HOME}.'/.cache/fullname.pl';
+      my $DICT = $cached || $ENV{DICT};
       if (-d $DICT && -e "$DICT/$wlist.txt") {
         $buf = &get_file("$DICT/$wlist.txt");
       } else {
@@ -354,7 +368,7 @@ sub get_gwhostport {
   printf "\/\/ config: %s\n",$conff if $dbug;
   local *CFG; open CFG,'<',$conff or warn $!;
   local $/ = undef; my $buf = <CFG>; close CFG;
-  use JSON qw(decode_json);
+  use JSON::XS qw(decode_json);
   my $json = decode_json($buf);
   my $gwaddr = $json->{Addresses}{Gateway};
      (undef,undef,$gwhost,undef,$gwport) = split'/',$gwaddr,5;
@@ -386,7 +400,7 @@ sub get_apihostport {
   my $conff = $IPFS_PATH . '/config';
   local *CFG; open CFG,'<',$conff or warn $!;
   local $/ = undef; my $buf = <CFG>; close CFG;
-  use JSON qw(decode_json);
+  use JSON::XS qw(decode_json);
   my $json = decode_json($buf);
   my $apiaddr = $json->{Addresses}{API};
   my (undef,undef,$apihost,undef,$apiport) = split'/',$apiaddr,5;
@@ -430,7 +444,7 @@ sub ipms_api {
       printf "Content: %s\n",$content;
    }
    if ($content =~ m/^{/) { # }
-      use JSON qw(decode_json);
+      use JSON::XS qw(decode_json);
       my $json = &decode_json($content);
       return $json;
    } elsif ($_[0] =~ m{^(?:cat|files/read)}) {

@@ -15,7 +15,9 @@ while (@ARGV && $ARGV[0] =~ m/^-/)
   #/^-(l|r|i|s)(\d+)/ && (eval "\$$1 = \$2", next);
   if (/^-v(?:erbose)?/) { $verbose= 1; }
   elsif (/^-a(?:ll)?/) { $all= 1; $radix = 95; }
-  elsif (/^-qm/) { $qm_only= 1; }
+  elsif (/^--?k(?:2)/) { $k2_only= 1; }
+  elsif (/^--?ba(?:fy)/) { $bafy_only= 1; }
+  elsif (/^--?qm/) { $qm_only= 1; }
   elsif (/^-(\d+)/) { $radix= $1; }
   elsif (/^-de?b(?:ug)?/) { $dbug= 1; }
   elsif (/^-d(?:ec)?/) { $dec= 1; }
@@ -31,7 +33,8 @@ my $buf = <STDIN>;
 local $/ = "\n";
 chomp $buf;
 
-$buf =~ s,.*/ip[fnm]s/,, if ($buf =~ m,/ip[fnm]/,);
+$buf =~ s,.*/ip[fnm]s/,, if ($buf =~ m,/ip[fnm]s/,);
+printf "buf: %s\n",$buf if $verbose;
 
 my $bin = '';
 if ($dec) {
@@ -95,6 +98,10 @@ my $b64e = &encode_basen($bin,64);
 
 if ($qm_only) {
 print $qm;
+} elsif ($k2_only) {
+printf 'k%s',lc$b36;
+} elsif ($bafy_only) {
+printf 'b%s',lc$b32;
 } else {
 print "--- # other encoding for z.$qm\n";
 printf "bin: '%s'\n",$binp;
@@ -109,7 +116,7 @@ printf "b32: B%s\n",$b32;
 printf "b32z: h%s\n",lc$b32z;
 printf "b36: k%s\n",lc$b36;
 printf qq'b39: "*%s*"\n',&encode_basen($bin,39);
-printf "b43: |%s|\n",$b43;
+printf qq'b43: "|%s|"\n',$b43;
 printf "b58: z%s\n",$b58;
 printf "b58f: Z%s\n",$b58f;
 printf "b63l: l%s\n",$b63;

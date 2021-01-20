@@ -1,7 +1,10 @@
 #!/usr/bin/env perl
 
+# intent:
+#   find out possible letters at 3rd or 6th spot in IPFS mhashes 
+
 use YAML::Syck qw(Dump);
-use lib $ENV{HOME}.'/github.com/site/lib';
+use lib $ENV{HOME}.'/repo/gitea/site/lib';
 use UTIL qw(encode_base58 encode_base58f encode_base32 hash1);
 
 my $n0 = int rand(0xFFFF_FFFF);

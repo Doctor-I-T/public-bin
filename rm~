@@ -4,56 +4,63 @@
 #   register file birth 
 #   and log edited files
 #
+export IPFS_PATH=$HOME/.../ipfs/hdd/BACKUP
+mutdir=$HOME/etc/mutables
+cachedir=$HOME/.cache
 
-fregf=$HOME/etc/mutables/qmbirth.log
-bregf=$HOME/etc/mutables/qmbackup.log
-eregf=$HOME/etc/mutables/qmedited.log
+fregf=$mutdir/qmbirth.log
+bregf=$mutdir/qmbackup.log
+eregf=$mutdir/qmedited.log
 
 tic=$(date +%s)
-export IPFS_PATH=$HOME/ipfs/.../BACKUP
 
-for ff in $(find . -maxdepth 2 -name "*~*"); do
+for ff in $(find . -maxdepth 2 -name "*~[1-9]"); do
   f=${ff##*/}
   mf=${ff%~1}
 
-  if grep -e 'PrivK' -e '|encrypt}}' $ff 1>/dev/null || echo $f | grep '\.sec'; then
+  if grep -e 'PrivK' -e '|encrypt}}' "$ff" 1>/dev/null || echo $f | grep -e '\.priv' -e '\.sec' -e 'rsa$' -e '^key' ; then
     echo info: backup-n-removal skipped for $ff
     continue
   fi
 
-  if [ -e ${mf}~1 ]; then
+  if [ -e "${mf}~1" ]; then
   device=$(df --output=source ${mf}~1 | tail -1)
-  in=$(stat -c %i ${mf}~1)
+  in=$(stat -c %i "${mf}~1")
   #crt=$(sudo debugfs -R "stat <$in>" $device 2>/dev/null | grep 'crtime:')
-  crt=$(birth ${mf}~1)
+  crt=$(birth "${mf}~1")
   #echo $crt | xargs -I{} date -d @{}
   date=$(date -d @$crt +%Y.%m.%d.%H.%M.%S)
-  fs=$(stat -t ${mf}~1)
-  qmf=$(ipfs add -Q ${mf}~1)
+  fs=$(stat -t "${mf}~1")
+  qmf=$(ipfs add -Q -n "${mf}~1")
   echo $tic: $fs $crt $date $qmf >> $fregf
-  echo "rm $mf~1"
-  rm ${mf}~1
+  echo "rm '$mf~1'"
+  mv "${mf}~1" $cachedir/removed/
   fi
 
 
   # track backup file
-  bf=$HOME/.vim/backups/${mf##*/}~
-  if [ -e $bf ]; then
-  bs=$(stat -t $bf | sed -e "s,$HOME/.vim/backups/,,")
-  qmb=$(ipfs add -Q $bf)
-  crt=$(birth $bf)
+  bf="$HOME/.vim/backups/${mf##*/}~"
+  if [ -e "$bf" ]; then
+  bs=$(stat -t "$bf" | sed -e "s,$HOME/.vim/backups/,,")
+  qmb=$(ipfs add -Q -n "$bf")
+  crt=$(birth "$bf")
   date=$(date -d @$crt +%Y.%m.%d.%H.%M.%S)
   echo $tic: $bs $crt $date $qmb >> $bregf
   fi
 
   # track modified file too
-  if [ -e $mf ]; then
-  ms=$(stat -t $mf)
-  qmm=$(ipfs add -Q -n $mf)
-  crt=$(birth $mf)
+  if [ -e "$mf" ]; then
+  ms=$(stat -t "$mf")
+  qmm=$(ipfs add -Q -n "$mf")
+  crt=$(birth "$mf")
   date=$(date -d @$crt +%Y.%m.%d.%H.%M.%S)
   echo $tic: $ms $crt $date $qmm >> $eregf
   fi
 
 done
+
+
+  qm=$(ipfs add -Q -w -r $cachedir/removed $mutdir)
+  echo $tic: $qm >> $cachedir/removed/qm.log
+  
 #find . -level 0 -type f -name "*~?" -exec mv -n {} $HOME/.vim/birth \;

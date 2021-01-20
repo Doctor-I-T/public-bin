@@ -1,7 +1,7 @@
 #
 
 MEMO_PATH=${MEMO_PATH:-$HOME/.memo}
-cat $MEMO_PATH/memo.* | perl -np -e 's/[\r\\]\s$/\x07/g;' | grep --color=always "$*" | sed -e 's/\x07/\x0A/g'
+cat $MEMO_PATH/memo.* | perl -np -e 's/[\r\\]\s$/\x07/g;' | grep --color=always -A2 $@ | sed -e 's/\x07/\x0A/g'
 
 
 # $Source: /my/bourne/shell/scripts/memo,v $

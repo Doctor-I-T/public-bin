@@ -213,8 +213,15 @@ if (exists $yml->{moustache}) {
      }
      if (-e $y) {
         print " loading $y\n";
-        my (undef,undef,$bname,$ext) = &fname($y);
-        my $yml = { $bname => &extract_yml($y) };
+        my ($fpath,undef,$bname,$ext) = &fname($y);
+            if ($y =~ n/\//) {
+              $ns = $y;
+              $ns =~ s/.*_//; $ns =~ tr,/,.,;
+            } else {
+              $ns = 'site.'.$bname;
+            }
+        my $yml = { $ns => &extract_yml($y) };
+        printf "yml: %s.\n",Dump($yml) if $dbug;
         my $s = &substi($yml,$buf);
         if ($s) { 
            $c += $s;

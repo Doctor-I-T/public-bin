@@ -60,8 +60,12 @@ sub unfoldf {
     printf "data: f.%s m.%s\n",unpack('H*',$payload),&encode_base64m($payload);
     push @data, $payload;
     &unfold($payload);
+  } elsif ($t == 0) {
+    my $vi = &readfvi(PB);
+    my $int = &uvarint($vi); 
+    printf "f%d.t%d i=%d (0x%s)\n",$f,$t,$int,unpack('H*',$vi);
   } else {
-    printf "f%d.t%d\n",$f,$t;
+    printf "f%d.t%d (?)\n",$f,$t;
   } 
 }
 

@@ -1,6 +1,22 @@
 #
 
 # publish a note ...
+file="${1%.*}"
+if [ -e _page.html ]; then
+option="--template=_page.html"
+list=_page.html
+fi
+pandoc -s -t html -o_$file.html $option $*
+qmi=$(ipfs add -q _$file.html)
+qm=$(ipfs add -Q -w -r _page.html img style.css);
+qm=$(ipfs object patch add-link $qm "index.html" $qmi)
+
+echo url: http://127.0.0.1:8080/ipfs/$qm
+echo url: https://gateway.pinata.cloud/ipfs/$qm
+#xdg-open _$file.html
+exit
+
+
 qmset='QmZkPjvYBxgNZeKCXZxFj5GBrSB7TUfNDHL8FnnzQXYWDU'
 dir=11248
 if [ -e _site ]; then

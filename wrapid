@@ -1,7 +1,7 @@
 #
 
 assetsdir=${ASSETS_PATH:-$HOME/assets}
-mutdir=${MUTABLES_DIR:-$HOME/etc/mutables}
+mutdir=${MUTABLES_DIR:-$HOME/.../mutables}
 if ! test -e $mutdir; then
 echo x-warn: ! -e ASSETS_PATH=$assetsdir
 fi

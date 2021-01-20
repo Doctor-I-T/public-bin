@@ -60,7 +60,7 @@ if ($content !~ m'404') {
 } else {
   $md6 = unpack'H*',&khash('MD6',$bin);
 }
-my $pn = hex(substr($md6,-$sz)); # use last sz nibble (default: 16-bit)
+my $pn = hex(substr($md6,-$sz-1,$sz)); # use last-to-sz sz nibbles (default: 16-bit)
 
 
 my $binp = $bin; $binp =~ tr/\000-\034\134\177-\377/./;

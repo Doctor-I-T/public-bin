@@ -4,6 +4,11 @@ local $/ = undef;
 my $buf = <STDIN>;
 use YAML::Syck qw(Load Dump);
 
+our $dbug=0;
+#understand variable=value on the command line...
+eval "\$$1='$2'"while @ARGV&&$ARGV[0] =~ /^(\w+)=(.*)/ && shift;
+
+
 $buf = "--- \n" . $buf if ($buf !~ m/^---/);
 $buf =~ y/\t/ /;
 #printf "buf: %s\n",$buf;
@@ -13,25 +18,28 @@ my $yml = Load($buf);
 
 my $LF = ($#ARGV > 0) ? "\n" : '';
 if (@ARGV) {
-foreach (@ARGV) {
-  my $a = $_;
-  $a =~ s/^(\w+)/{$1}/;
-  $a =~ s/\.(\w+)/{$1}/g;
-  $a = '$yml->'.$a;
-  if ($debug) {
-  printf "a: %s\n",$a;
-  }
-  my $ref = eval("ref($a)");
-  if ($ref eq '') {
-     printf "%s",eval "$a"; 
-  } elsif ($ref eq 'ARRAY') {
-     printf "%s".$LF,join',',eval("@{$a}");
-  } elsif ($ref eq 'HASH') {
-     print Dump(eval("$a")),$LF;
-  } else {
-     printf "ref(%s): %s\n",$_,eval "ref($a)"; 
-  }
-}
+   foreach (@ARGV) {
+      my $a = $_;
+      $a =~ s/^([\w_\-]+)/{'$1'}/;
+      $a =~ s/\.([\w_\-]+)/{'$1'}/g;
+      $a = '$yml->'.$a;
+      my $ref = eval("ref($a)");
+      if ($dbug) {
+         printf "a: %s\n",$a;
+         printf "ref: '%s'\n",$ref;
+      }
+      if ($ref eq '') {
+         printf "%s",eval "$a"; 
+      } elsif ($ref eq 'ARRAY') {
+         print Dump(eval("$a")),$LF;
+      } elsif ($ref eq 'HASH') {
+         print Dump(eval("$a")),$LF;
+      } else {
+         printf "ref(%s): %s\n",$a,eval "ref($a)"; 
+         print eval("$a"),$LF;
+         print Dump(eval("$a")),$LF;
+      }
+   }
 } else {
  printf "%s...\n",YAML::Syck::Dump($yml);
 }

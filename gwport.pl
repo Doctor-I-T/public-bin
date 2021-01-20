@@ -3,6 +3,7 @@
 my $qm = 'zz38RTafUtxY';
 my ($gwhost,$gwport) = &get_gwhostport();
 my $proto = ($gwport == 443) ? 'https' : 'http';
+printf "gwport: %s\n",$gwport;
 printf 'url: %s://%s:%s/ipfs/%s'."\n",$proto,$gwhost,$gwport,$qm;
 exit $?;
 

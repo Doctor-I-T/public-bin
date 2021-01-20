@@ -15,9 +15,21 @@ toplevel=$(git rev-parse --show-toplevel)
 gitdir=$(git rev-parse --git-dir)
 prefix=$(git rev-parse --show-prefix)
 headid=$(cat $gitdir/HEAD | cut -d' ' -f2)
+if git remote | grep -q origin; then
+repo=$(git remote get-url origin)
+else
+remote=$(git remote | head -1)
+if [ "x$remote" != 'x' ]; then
+repo=$(git remote get-url $remote)
+else 
+repo=$(git rev-parse --git-dir)
+fi
+fi
+echo repo: $repo
 
 #prev=$(ipfs add -Q -w $gitdir/config )
 prev=$(git config ipfs.qm)
+prev=${prev:-QmUNLLsPACCz1vLxQVkXqqLX5R1X345qqfHbsf67hvA3Nn}
 if [ "x$IPFS_PATH" != 'x' ]; then
 echo  IPFS_PATH: $IPFS_PATH
 fi
@@ -39,7 +51,7 @@ echo lni: $lni
 tag=$(echo -n "$user@$domain" | ipfs add -Q --raw-leaves --hash identity --cid-base=base58btc)
 echo tag: $tag
 
-if git remote get-url origin 2>/dev/null | grep -q -e '\.github\.com:' 1>/dev/null;  then 
+if git remote get-url origin 2>/dev/null | grep -e '\.github\.com:' | grep -q -v -e 'gist' 1>/dev/null;  then 
   remote=$(git remote get-url origin | sed -e "s/git@.*\.github\.com:/git@$user.github.com:/");
   echo remote.origin: $remote
   git remote set-url origin $remote
@@ -65,7 +77,7 @@ export GIT_AUTHOR_EMAIL="michel@ocean"
 #echo "author: $GIT_AUTHOR_NAME <$GIT_AUTHOR_EMAIL>"
 else
 peerid=$(ipms config Identity.PeerID)
-eval $(perl -S fullname.pl -a $peerid | eyml)
+eval $(perl -S fullname.pl -a $repo | eyml)
 git config committer.name "$fullname"
 git config committer.email "$email"
 export GIT_COMMITTER_NAME="$fullname"

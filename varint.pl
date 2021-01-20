@@ -8,7 +8,7 @@ if ($ans =~ /^\d+$/) {
    printf "vint: %s\n",unpack'H*',$vint;
 } elsif ($ans =~ /^(?:0x)?([a-f0-9]+)$/) {
    my $int = &uvarint(pack'H*',$1);
-   printf "int: %u\n",$int;
+   printf "int: %u, 0x%x\n",$int,$int;
 } else {
   last;
 }

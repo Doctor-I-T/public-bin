@@ -1,5 +1,14 @@
 #
 
+# intent:
+#  create a mutable for passed directory (".log")
+#  adding the log file to the ipfs folder itself
+#  
+# usage:
+#   qm-it [-n] dirname
+# 
+#  -n : 'simulate' don't add any entry to .log file
+
 if [ "x$1" = 'x-n' ]; then
  nolog=1; shift;
 fi

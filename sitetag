@@ -5,12 +5,12 @@
 #  
 # usage:
 #   seo <tag>
-#  whete tag is an email address for instance
+#  where tag is an email address for instance
 
 if which ipms 1>/dev/null; then ipfs=ipms; else ipfs=ipfs; fi
 ipfs=$(which ipfs) # tempo fix w/ 0.5.1
 $ipfs --version | sed -e s/ipfs/ipfs:/
-MUTDIR=${MUTDIR:-$HOME/etc/mutables}
+MUTDIR=${MUTDIR:-$HOME/.../mutables}
 
 symb=sitetags
 set -e
@@ -19,6 +19,7 @@ read tag
 else
 tag="$*"
 fi
+# a tag is 35char long (max)
 echo "tag: $tag"
 kw=$(echo -n "$tag" | $ipfs add -Q --raw-leaves --hash identity --cid-base=base58btc)
 kw35=$(echo $kw | cut -c-35)
@@ -27,12 +28,12 @@ if [ "$kw" != "$kw35" ]; then
 fi
 echo "kw: $kw"
 # getting previous file
-if qm=$($ipfs files stat --hash /my/etc/mutables/$symb.log); then
+if qm=$($ipfs files stat --hash /.../mutables/$symb.log 2>/dev/null); then
 if test ! -e $MUTDIR/$symb.log; then
 $ipfs get -o $MUTDIR/$symb.log /ipfs/$qm
 fi
 else
-if $ipfs files mkdir -p /my/etc/mutables; then true; fi
+if $ipfs files mkdir -p /.../mutables; then true; fi
 if test ! -e $MUTDIR; then
 mkdir -p $MUTDIR
 fi
@@ -69,9 +70,9 @@ echo "qm: $qm # ($symb.log)"
 $ipfs --offline name publish --allow-offline --key=$symb /ipfs/$qm > /dev/null
 
 # filing and signing mutable
-if $ipfs files rm /my/etc/mutables/$symb.log; then true; fi
-$ipfs files cp /ipfs/$qm /my/etc/mutables/$symb.log
-echo url: http://localhost:$apiport/webui/#file/my/etc/mutables/$symb.log
+if $ipfs files rm /.../mutables/$symb.log; then true; fi
+$ipfs files cp /ipfs/$qm /.../mutables/$symb.log
+echo url: http://localhost:$apiport/webui/#file/.../mutables/$symb.log
 # create mutable key if necessary ...
 if $ipfs key list | grep -q -w 'mutables'; then
 mut=$($ipfs key list -l | grep -w 'mutables'| cut -d' ' -f 1)
@@ -80,7 +81,7 @@ mut=$($ipfs key gen -t rsa -s 3072 'mutables')
 echo "mut: $mut"
 fi
 # signing ...
-mt=$($ipfs files stat --hash /my/etc/mutables)
+mt=$($ipfs files stat --hash /.../mutables)
 echo url: https://gateway.ipfs.io/ipfs/$mt/$symb.log
 #curl -s -I https://gateway.ipfs.io/ipfs/$mt/$symb.log 1>/dev/null 2>&1
 $ipfs --offline name publish --allow-offline --key=mutables /ipfs/$mt > /dev/null

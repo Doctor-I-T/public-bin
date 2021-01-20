@@ -87,7 +87,8 @@ sub version {
   my @times = (lstat($_[0]))[8,9,10]; # atime, mtime,ctime
   my $vtime = (sort { $a <=> $b } @times[1,2])[-1];
   my ($etime,$ltime) = (sort { $a <=> $b } @times)[0,-1];
-  my $age = ( $ltime - $birth ) / $_1yrs;
+  my $age = ( $ltime - $birth ) / $_1yrs; # using 'late-time'
+
   my $version = &rev($vtime);
 
 
@@ -115,7 +116,6 @@ sub get_birth { # extract birth time from file
     local *EXEC; open EXEC,"$gitcmd 2>/dev/null |" or warn $!;
     local $/ = "\n";
     $btic = <EXEC>; chomp($btic); close EXEC;
-
   }
   close F;
   if (! $btic) {

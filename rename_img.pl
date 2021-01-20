@@ -13,7 +13,8 @@ my $log = 0;
 my $sz = 4; # nb nibble from md6
 my $skip = 1;
 my $all = 0;
-my $shard = 0;
+my $attr = 0;
+my $shard = undef;
 my $keep = 0;
 my $remove = 0;
 while (@ARGV && $ARGV[0] =~ m/^-/)
@@ -24,8 +25,9 @@ while (@ARGV && $ARGV[0] =~ m/^-/)
   elsif (/^-(\d)/) { $sz= $1; }
   elsif (/^--?l(?:og)?/) { $log= 1; }
   elsif (/^--?rm/) { $remove= 1; }
+  elsif (/^--?at(?:trib)?/) { $attr= 1; }
   elsif (/^--?k(?:eep)?/) { $keep= 1; }
-  elsif (/^--?s(?:hard)?/) { $shard= 1; }
+  elsif (/^--?s(?:hard=)?=?([\w.]*)/) { $shard= $1 ? $1 : shift; }
   elsif (/^-a$/) { $all= 1; }
   elsif (/^--?all/) { $all= 1;  $skip= 0; }
   else                  { die "Unrecognized switch: $_\n"; }
@@ -33,6 +35,9 @@ while (@ARGV && $ARGV[0] =~ m/^-/)
 }
 #understand variable=value on the command line...
 eval "\$$1='$2'"while $ARGV[0] =~ /^(\w+)=(.*)/ && shift;
+
+
+mkdir $shard if (defined $shard && ! -d $shard);
 
 printf "--- # %s\n",$0;
 printf "log: %s\n",$log;
@@ -51,6 +56,10 @@ local *RM;
 if ($remove) {
   open RM,'>>','_removed.log';
 }
+my $metastore = "$ENV{HOME}/.../ipfs/usb/MUTABLES/metastore";
+my $metaf = '_meta.log';
+local *META;
+open META,'>>',"$metaf";
 
 my $root;
 if (@ARGV) {
@@ -77,7 +86,9 @@ foreach my $f (sort { substr($a,2) <=> substr($b,2) } @list) {
   next unless ($all || $f =~ /(?:image?|download|un+amed|pimgp|maxres|hqdef|^I_[\da-f]|^f_)|^[0-9a-f_]+n?\.|^x[^a-z]/);
   #next unless ($f =~ /^(?:IMG_\d|SF-)/);
   my ($bname,$ext) = ($1,$2) if $f =~ m/(.*)\.([^\.]+)$/;
-      $bname = $fname unless $bname;
+      $bname = $f unless $bname;
+  $bname =~ s,^.*/,,;
+
   $ext =~ s/!.*//;
   $ext = 'jpg' if ($ext eq 'jpeg');
   $ext =~ tr/~//d;
@@ -94,11 +105,13 @@ foreach my $f (sort { substr($a,2) <=> substr($b,2) } @list) {
   my $id7 = substr($gitid,0,7);
   my $md6 = &digest('MD6',F);
   my $sha2 = &digest('SHA-256',F); # use Digest !
-  my $etime = (sort { $a <=> $b } (lstat(F))[9,10])[0];
+  my @stats = lstat(F);
+  my $mtime = $stats[8];
+  my $etime = (sort { $a <=> $b } (@stats)[9,10])[0];
   close F;
   my $nu = hex($id7);
   my $pn = hex(substr($md6,-$sz)); # use last sz nibble (default: 16-bit)
-  my $sn = hex(substr(lc$sha2,-6));
+  my $sn = hex(substr(lc$sha2,-8));
   my $word = &word($pn);
   my $cname = &word($sn);
   printf "sha2: %s\n",$sha2;
@@ -106,8 +119,20 @@ foreach my $f (sort { substr($a,2) <=> substr($b,2) } @list) {
   printf "sn: %s\n",$sn;
   printf "cname: %s\n",$cname;
   my $n2 = sprintf "%09u",$nu; $n2 =~ s/(....)/\1_/;
-  my $n = sprintf "$root-%s.%s",$word,$ext;
   # -----------------------------------------------
+  my $attrib;
+  if ($attr == 0) {
+    $attrib = $root;
+  } elsif ($bname =~ m/^([\w-]+)-$word$/) {
+    $attrib = $1;
+  } elsif ($bname =~ m/^([\w-]+)-\w+-unsplash$/) {
+    $attrib = $1;
+  } elsif ($bname =~ m/^([\w-]+)-\w+/) {
+    $attrib = $1;
+  }
+  printf "attrib: %s\n",$attrib;
+  my $ns = ($attrib) ? $attrib : $root;
+  my $n = sprintf "%s-%s.%s",$ns,$word,$ext;
   
   my $nf;
   my $sharddir;
@@ -115,10 +140,18 @@ foreach my $f (sort { substr($a,2) <=> substr($b,2) } @list) {
     ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime($etime);
      $yhour = $yday * 24 + $hour + ($min / 60 + $sec / 3600);
      $yweek=$yday/7;
-     $sharddir = sprintf '%4d',$year+1900;
+     $sharddir = sprintf '%s/%4d',$shard,$year+1900;
      mkdir $sharddir unless -d $sharddir;
-     $sharddir = sprintf '%4d/WW%02d',$year+1900,$yweek;
+     $sharddir = sprintf '%s/%4d/WW%02d',$shard,$year+1900,$yweek;
      mkdir $sharddir unless -d $sharddir;
+     if (&get_nbfiles($sharddir) > 512) {
+        my $MoY = [qw(Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec)];
+        $sharddir = sprintf '%s/%4d/%s',$shard,$year+1900,$MoY->[$mon];
+        mkdir $sharddir unless -d $sharddir;
+        $sharddir = sprintf '%s/%4d/%s/D%03d',$shard,$year+1900,$MoY->[$mon],$yday;
+        mkdir $sharddir unless -d $sharddir;
+        printf "sharddir: %s\n",$sharddir;
+     }
      $nf = sprintf '%s/%s',$sharddir,$n;
   } else {
      $nf = $n;
@@ -134,6 +167,8 @@ foreach my $f (sort { substr($a,2) <=> substr($b,2) } @list) {
   }
   # -----------------------------------------------
   next if ($f eq $nf);
+  printf META "%u: %s %s %s\n",$mtime,$gitid,$stats[7],$f;
+
   if (-e $nf) {
     local *F; open F,$nf or do { warn qq{"$nf": $!}; next };
     binmode F unless $nf =~ m/\.txt/;
@@ -149,7 +184,7 @@ foreach my $f (sort { substr($a,2) <=> substr($b,2) } @list) {
     } else {
       printf "%s: %s\n",$gitid,$f;
       printf "%s: %s\n",$githash,$nf;
-       $n = sprintf "${root}-%s.%s",$cname,$ext;
+       $n = sprintf "${ns}-%s.%s",$cname,$ext;
        if ($shard) {
           $nf = sprintf '%s/%s',$sharddir,$n;
        } else {
@@ -166,21 +201,23 @@ foreach my $f (sort { substr($a,2) <=> substr($b,2) } @list) {
             unlink $f unless $keep; # keep the previous one...
             last;
           } else {
-          $nf = sprintf "dup/${root}-%s,%s (%u).%s",$cname,$word,$i++,$ext;
+          $nf = sprintf "dup/${ns}-%s,%s (%u).%s",$cname,$word,$i++,$ext;
           }
        }
        next if (! -e $f);
        if (-e $nf) {
-          $nf = sprintf "dup/${root}-%s.%s",$n2,$ext;
+          $nf = sprintf "dup/${ns}-%s.%s",$n2,$ext;
        }
     }
   }
-  rename $f,$nf or die "$f: $!"
+  rename $f,$nf or die "$f: $!";
 }
 
+close META;
 close LOG;
+close RM;
 
-sleep 3;
+#sleep 3;
 exit $?;
 
 # ---------------------------------------------------------
@@ -257,6 +294,13 @@ sub word { # 20^4 * 6^3 words (25bit worth of data ...)
  }
  $str .= $cs->[$n];
  return $str;	
+}
+
+sub get_nbfiles {
+  my $dir = shift;
+  local *D; opendir D,$dir; my $n = grep !/^\./, readdir(D); closedir D;
+  printf "n: %s (%s)\n",$n,$dir;
+  return $n
 }
 # ---------------------------------------------------------
 # "I see human intelligence consuming machine intelligence, not the other

@@ -9,30 +9,56 @@
 pgm=${0##*/}
 cmd=$(echo $pgm | cut -d'-' -f 2)
 
-if [ $cmd == 'cmd' ]; then
+if [ $cmd = 'cmd' ]; then
   cmd=$1; shift
 fi
   
 set -e
-
-if [ $cmd == 'commit' -o $cmd == 'push' ]; then
-  dir=$1; shift
-  if [ ! -d $dir ]; then
-    dir=${dir%/*}
-  fi
-  \cd $dir
-  git $cmd $*
-else
 for last in "$@"; do true; done
-if echo "$last" | grep -q -e '^/'; then
-if test -e $last; then
-  dir=${last%/*}
+echo "last: $last"
+
+if [ "$cmd" = 'push' ]; then
+  if [ -d "$1" ]; then
+    dir="$1"; shift
+    echo dir: $dir
+    \cd "$dir"
+    git $cmd $*
+  else
+    if [ -f "$1" ]; then
+     dir="${1%/*}"; shift
+     echo dir: $dir
+     \cd "$dir"
+      git $cmd $*
+    fi
+  fi
+else
+if [ "$cmd" = 'commit' ]; then
+  if [ -d $last ]; then
+    dir=$last
+  else 
+    dir=${last%/*}
+  fi
+  echo chdir: $dir
   \cd $dir
-  echo "cd $(pwd -P); git $cmd $*"
+  perl -S sname.pl "$dir" >/dev/null
+  if [ -f $last ]; then
+     git add $last
+  fi
+  gituser
+  echo git $cmd $*
+  git $cmd -uno $*
+else
+  if echo "$last" | grep -q -e '^/'; then
+    if test -e $last; then
+    dir=${last%/*}
+    \cd $dir
+    perl -S sname.pl "$dir" >/dev/null
+    echo "cd $(pwd -P); git $cmd $*"
+    /usr/bin/git $cmd $*
+    fi
+  fi
 fi
 fi
 
- 
-/usr/bin/git $*
-
-fi
+exit $?;
+true;

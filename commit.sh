@@ -3,9 +3,9 @@
 # intent: auto-commit ...
 
 peerid=$(ipms --offline config Identity.PeerID)
-author=$(perl -S fullname.pl --author  $peerid)
+author="$(perl -S fullname.pl --author  $peerid)"
 date=$(date +%Y-%m-%d)
-ver=$(perl -S version -a $0 | xyml scheduled)
+ver=$(perl -S version -a "$0" | xyml scheduled)
 echo ver: $ver
 commit_msg()
 {
@@ -30,7 +30,7 @@ gittop=$(git rev-parse --show-toplevel) && echo top: $gittop
 gitid=$(git rev-parse --short HEAD)
 gituser
 commit_msg
-git commit -a -uno -m "$msg" --author=$author -s
+git commit -a -uno -m "$msg" --author="$author" -s
 
 git tag -f -a $ver -m "tagging $gitid on $date"
 # test if tag $ver exist ...

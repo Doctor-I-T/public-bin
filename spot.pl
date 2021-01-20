@@ -1,12 +1,12 @@
 #!/usr/bin/perl
 BEGIN { our $rel='QmUWQiJ4j9rFBJh15GtVymqo7qSbJCpZjBs9fCE92yAXSK';
    if (! defined $ENV{SITE} || ! -e $ENV{SITE}.'/lib/IPMS.pm') {
-      if (! -e  "$ENV{HOME}/.gqtools/$rel") {
-         printf "// installing .gqtools ...";
-         system "ipfs get -o $ENV{HOME}/.gqtools/$rel /ipfs/$rel 2>/dev/null" or die $!;
+      if (! -e  "$ENV{HOME}/.../gqtools/$rel") {
+         printf "// installing gqtools ...";
+         system "ipfs get -o $ENV{HOME}/.../gqtools/$rel /ipfs/$rel 2>/dev/null" or die $!;
          print "\n.\n";
       }
-      $ENV{SITE} = "$ENV{HOME}/.gqtools/$rel";
+      $ENV{SITE} = "$ENV{HOME}/.../gqtools/$rel";
    }
 }
 #BEGIN {

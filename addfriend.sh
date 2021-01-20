@@ -1,5 +1,6 @@
 #
 
+# TODO complete the script ...
 # usage:
 # addfriend.sh ${peerkey} ${nickname}
 
@@ -24,3 +25,13 @@ EOT
 
 qm=$(ipfs add -Q $peeridsf)
 echo url: http://localhost:8080/ipfs/$qm
+ipfs files rm /my/friends/peerids.yml~ 2>/dev/null
+ipfs files mv /my/friends/peerids.yml /my/friends/peerids.yml~
+ipfs files cp /ipfs/$qm /my/friends/peerids.yml
+
+# ipfs name publish --key=registration /ipfs/$qm
+key=$(ipfs key list -l --ipns-base=b58mh | grep -w registration | cut -d' ' -f1)
+ipfs ping QmcfHufAK9ErQ9ZKJF7YX68KntYYBJngkGDoVKcZEJyRve 2>/dev/null
+ipfs name resolve $key
+xdg-open http:/localhost:8080/ipns/$key/register.html
+token=$(echo "I've got friends!" | ipfs add -Q )

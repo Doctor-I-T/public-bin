@@ -3,7 +3,7 @@
 my $yml = {};
 
 use YAML::Syck qw(Load Dump);
-if (0) {
+if (-f $ARGV[0]) {
    my $file = shift;
    use YAML::Syck qw(LoadFile);
    $yml = LoadFile($file);

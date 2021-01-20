@@ -21,10 +21,13 @@ my %seen = ();
 my $sn = 0;
 
 my $nn = 0;
-my %nid = ('//' => 'n1');
-my %map = ();
-my %label = ();
+my %nid = ('/' => 'n0');
+my %map = ('n0' => '/');
+my %label = ('n0' => 'root');
 
+my %edges = ();
+
+my $prevd;
 my @traj = ();
 my @edges = ();
 while(<L>) {
@@ -32,7 +35,16 @@ while(<L>) {
   chomp;
   my ($ts,$d) = (split(/:\s+/,$_,2));
   #printf "ts: %s (%s)\n",$ts,$d;
-     $d =~ s/\~/$ENV{HOME}/;
+  
+  if ($d eq '~') {
+   # skip transitional "~"
+   if ($prevd ne '~') {
+     $prevd = $d;
+     next;
+   }
+  }
+  $prevd = $d;
+  $d =~ s,\~,$ENV{HOME},;
   if ($traj[-1] ne $d) { # suppress doubles !
     push @traj, $d;
   } else {
@@ -42,39 +54,50 @@ while(<L>) {
     $sn++;
     my $did = "d$sn";
     printf "d: %s (%s)\n",$d,$did;
-    my @v = split('/',$d);
-    my @ids = ();
-    my $p = '';
-    my $pid = undef;
-    foreach (@v[0..$#v]) {
-       $p .= $_.'/';
-       if (! exists $nid{$p}) {
-         $nn++;
-         $nid = "n$nn";
-         #printf "  p: %s (%s)\n",$p,$nid;
-         $nid{$p} = $nid;
-         if ($pid) {
-            # see [1](https://graphviz.org/doc/info/attrs.html#k:arrowType)
-            push @edges,sprintf '"%s" -> "%s" [weight=3 dir = "back", arrowtail = "dot"]',$pid, $nid;
-         }
-       } else {
-         $nid = $nid{$p};
+    
+    my $pnid;
+    my $p = &physical($d);
+    for my $c ($p, $d) {
+       my @v = split('/',$c); shift @v;
+       my @ids = ();
+       my $n = '';
+       $pnid = 'n0'; # parent node id;
+       foreach (@v) {
+          $n .= '/'.$_;
+          $nid = &get_nid($n);
+          push @ids, $nid;
+          if (! exists $map{$nid}) {
+             $map{$nid} = $n;
+             $sname{$nid} = &sname($n);
+             $label{$nid} = $_ || 'root';
+          }
+          if ($pnid) {
+             if (! $edges{"$pnid-$nid"}++) {
+                # see [1](https://graphviz.org/doc/info/attrs.html#k:arrowType)
+                push @edges,sprintf '"%s" -> "%s" [weight=4 dir = "back", arrowtail = "dot"]',$pnid, $nid;
+             }
+          }
+          $pnid = $nid; # memorize parent !
        }
-       push @ids, $nid;
-       if (! exists $map{$nid}) {
-          $map{$nid} = $p;
-          $sname{$nid} = &sname($p);
-          $label{$nid} = $_ || 'root';
-       }
-       $pid = $nid; # memorize parent !
+    }
+
+    if ($p ne $d) {
+        print " - d: $d ($pnid)\n";
+      if (exists $nid{$p}) {
+        my $pid = $nid{$p};
+        print " - p: $p ($pid)\n";
+        if (! $edges{"$pid-$pnid"}++) {
+           push @edges,sprintf '"%s" -> "%s" [style=dotted color=cyan weight=1 dir="both", arrow = "dot"]',$pid, $pnid;
+        }
+      }
     }
   }
 
   if ($pos) {
     $pn++;
-    push @hops,sprintf '"%s" -> "%s" [concentrate=true weight=1 constraint=true label="%d" style="dashed"]',$pos, $nid{"$d/"},$pn;
+    push @hops,sprintf '"%s" -> "%s" [concentrate=true weight=3 constraint=true label="%d" taillabel="%d" style="dashed"]',$pos, $nid{"$d"},$pn,$pn;
   }
-  $pos = $nid{"$d/"};
+  $pos = $nid{"$d"};
   
 }
 
@@ -103,7 +126,7 @@ foreach (@edges) {
 }
 
 printf DF qq'"nx" [rank="max" label="You are here" shape=rectangle color=red]\n',$pos;
-printf DF qq'"nx" -> "%s" [color=blue weight=0 constraint=false]\n',$pos;
+printf DF qq'"nx" -> "%s" [color=blue taillabel="%d" weight=0 constraint=false]\n',$pos,$pn;
 
 print DF "}\n";
 close DF;
@@ -112,6 +135,27 @@ system "cd $cachedir; dot -Tpng sname.dot -o sname.png";
 
 
 exit $?;
+
+sub get_nid {
+   my $d = shift;
+   if (exists $nid{$d}) {
+      return $nid{$d};
+   } else {
+      $nn++;
+      $nid = "n$nn";
+      $nid{$d} = $nid;
+      printf "  n: %s nid:%s\n",$d,$nid;
+      return $nid;
+   }
+}
+sub bname {
+  my ($file) = @_;
+      $file =~ s,\\+,/,go;
+      $file =~ s,/$,,o;
+  my $s = rindex($file,'/');
+  my $bname = ($s) ? substr($file,$s+1) : $file;
+  return $bname;
+}
 
 sub sname { # shortpath/name ... (only first letters)
   my ($file) = @_;
@@ -126,6 +170,33 @@ sub sname { # shortpath/name ... (only first letters)
     $spath =~ s,/(.)[^/]*,\1,g;
     $spath = '/'.$spath if ($fpath =~ m{^/});
   return "$spath/$fname";
+}
+
+sub physical {
+   my $d = shift;
+   my @p = split('/',$d); shift@p;
+   #printf "\@p: [%s]\n",join',',@p;
+   my $flag = 0;
+   my $path = '';
+   foreach my $p (@p) {
+      my $l = "$path/$p";
+      #print "l: $l\n";
+      if (-l "$l") {
+         $flag++;
+         my $link = readlink($l);
+         print "link: $l -> $link\n";
+         if ($link =~ m,^/,) {
+            $path = "$link"
+         } else {
+            $path .= "/$link"
+         }
+      } else {
+         $path .= "/$p";
+      }
+   }
+   $path .= '/' if $d =~ m,/$,;
+   printf " p: %s\n",$path if $flag;
+   return $path;
 }
 
 

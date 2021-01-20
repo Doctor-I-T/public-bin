@@ -52,6 +52,7 @@ while (@ARGV && $ARGV[0] =~ m/^-/)
     $human = 1,       next if $arg =~ m/^-d$/;
     $mail = 1,        next if $arg =~ m/^-m(?:ail)?$/;
     $log = 1,        next if $arg =~ m/^-l(?:og)?$/;
+    $ident = 1,      next if $arg =~ m/^--?ident$/i;
     $id = 1,         next if $arg =~ m/^-i(?:d)?$/i;
     $rcs = $1 ? "$1" : shift || 'file.txt', next if $arg =~ m/^--?r(?:cs)?+(\.*)?$/;
     $cvs = 1,        next if $arg =~ m/^--?c(?:vs)?$/;
@@ -87,6 +88,7 @@ if ($#ARGV < 0) {
 }
 while (@ARGV) {
   $date= shift;
+  shift if ($ARGV[0] eq '@');
   if ($ARGV[0] =~ m/\:/) { $time = shift; }
   elsif ($ARGV[0] =~ m/\./) { $time = shift; $time =~ y/./:/;}
   else { $time ||= "$hour:$min:00"; }
@@ -95,8 +97,12 @@ while (@ARGV) {
   printf "%s at $time ?\n", $date if $dbug;
   if ($date =~ m|/|) { # date of form 07/28/97 (US style)
      ($mon,$mday,$year) = split '/', $date;
-     if ($mon > 12) { # date of form 1997/7/28 (EU style)
-        ($year,$mon,$mday) = split '/', $date;
+     if ($mon > 12) {
+        if ($year > 31) { # date of form 28/7/1997 (FR style)
+          ($mday,$mon,$year) = split '/', $date;
+        } else { # date of form 1997/7/28 (EU style)
+          ($year,$mon,$mday) = split '/', $date;
+        }
      }
      $year ||= $yy;
      $tic= timelocal($sec,$min,$hour,$mday,$mon-1,$year);
@@ -248,6 +254,13 @@ sub affiche {
     printf "date\t%4d.%02d.%02d.%02d.%02d.%02d\n",
        $year+1900,$mon+1,$mday,$hour,$min,$sec;
     printf "commitid\t%04x%08x%04x\n",$$,$time,int rand(0x10000);
+  } elsif ($ident) {
+    my $fullname = "Michel C.";
+    my $gecos = 'z...'; # TBD
+    my $user = $ENV{USER};
+    my $domain = 'eottm.ml';
+    my $TZ = $ENV{TZ}; ## TODO extract TZ from system
+    printf "%s (%s) <%s@%s> %u %s\n",$fullname,$gecos,$user,$domain,$tic,$TZ;
   } elsif ($id) {
     printf "ID:%4s\n",
          &base36(int($yhour/$_1yr * 36**4)), # 18 sec accuracy
