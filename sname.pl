@@ -32,12 +32,13 @@ sub sname { # shortpath/name ... (only first letters)
   my $s = rindex($file,'/');
   my $fpath = ($s>0) ? substr($file,0,$s) : '.';
   my $fname = ($s) ? substr($file,$s+1) : $file;
-  #print "p:$fpath f:$fname\n";
+  #print STDERR "p:$fpath f:$fname\n";
     $fpath =~ s/$ENV{HOME}/\~/;
   my $spath = $fpath;
-    $spath =~ y[~/@A-Za-z0-9][]dc;
-    #$spath =~ s,/(.)[^/]*,\1,g;
-    $spath =~ s,/(.)[^/]*,\1,g;
+    $spath =~ s,/\.,/,g;
+    $spath =~ y[~/@A-Za-z0-9\.][]dc;
+  #print STDERR "s:$spath\n";
+    $spath =~ s,/(.)[^/]*,$1,g;
     $spath = '/'.$spath if ($fpath =~ m{^/});
   return "$spath/$fname";
 }
