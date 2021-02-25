@@ -7,6 +7,7 @@
 export IPFS_PATH=$HOME/.../ipfs/hdd/BACKUP
 mutdir=$HOME/etc/mutables
 cachedir=$HOME/.cache
+if [ -e $HOME/.tty ]; then ttyp=$(cat $HOME/.tty); else ttyp=/dev/tty; fi
 
 fregf=$mutdir/qmbirth.log
 bregf=$mutdir/qmbackup.log
@@ -18,8 +19,8 @@ for ff in $(find . -maxdepth 2 -name "*~[1-9]"); do
   f=${ff##*/}
   mf=${ff%~1}
 
-  if grep -e 'PrivK' -e '|encrypt}}' "$ff" 1>/dev/null || echo $f | grep -e '\.priv' -e '\.sec' -e 'rsa$' -e '^key' ; then
-    echo info: backup-n-removal skipped for $ff
+  if grep -e 'PrivK' -e '|encrypt}}' "$ff" 1>/dev/null || echo $f | grep -e '\.priv' -e '\.sec' -e 'rsa$' -e '^key' >>$ttyp ; then
+    echo info: backup-n-removal skipped for $ff >> $ttyp
     continue
   fi
 
@@ -33,7 +34,7 @@ for ff in $(find . -maxdepth 2 -name "*~[1-9]"); do
   fs=$(stat -t "${mf}~1")
   qmf=$(ipfs add -Q -n "${mf}~1")
   echo $tic: $fs $crt $date $qmf >> $fregf
-  echo "rm '$mf~1'"
+  echo "rm '$mf~1'" >> $ttyp
   mv "${mf}~1" $cachedir/removed/
   fi
 
@@ -48,10 +49,10 @@ for ff in $(find . -maxdepth 2 -name "*~[1-9]"); do
   echo $tic: $bs $crt $date $qmb >> $bregf
   fi
 
-  # track modified file too
+  # track modified file too [ /!\ no -n ]
   if [ -e "$mf" ]; then
   ms=$(stat -t "$mf")
-  qmm=$(ipfs add -Q -n "$mf")
+  qmm=$(ipfs add -Q "$mf")
   crt=$(birth "$mf")
   date=$(date -d @$crt +%Y.%m.%d.%H.%M.%S)
   echo $tic: $ms $crt $date $qmm >> $eregf
@@ -64,3 +65,7 @@ done
   echo $tic: $qm >> $cachedir/removed/qm.log
   
 #find . -level 0 -type f -name "*~?" -exec mv -n {} $HOME/.vim/birth \;
+
+echo .
+exit $?
+true;

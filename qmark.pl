@@ -14,8 +14,8 @@ my $stamp = time()%691;
 my $set = shift || sprintf 'qmark-%d',$stamp;
 
 if ($set =~ m/PN/) {
-  $ENV{IPFS_PATH} = $ENV{HOME}.'/.../ipfs/usb/PN';
-  $QMARKSDIR=$ENV{HOME}.'/.../ipfs/usb/PN/qmarks';
+  $ENV{IPFS_PATH} = $ENV{HOME}.'/.../ipfs/usb/XPN';
+  $QMARKSDIR=$ENV{HOME}.'/.../ipfs/usb/XPN/qmarks';
 } else {
   $ENV{IPFS_PATH} = $ENV{HOME}.'/.../ipfs/usb/QMARKS';
   $QMARKSDIR=$ENV{QMARKSDIR}||$ENV{HOME}.'/.../qmarks';
@@ -75,16 +75,20 @@ $content .= "\n";
 
 die unless $content;
 
-my $mdf = $QMARKSDIR.'/qmark.md';
-if (0) {
-open F,'>',$mdf;
+my $mdf = sprintf'qmark-%03d.md',$stamp;
+if (1) {
+my $mdd = "$QMARKSDIR/qmrk";
+mkdir $mdd unless -d $mdd;
+printf "mdf: file://%s/%s\n",$mdd,$mdf;
+open F,'>',"$mdd/$mdf";
 print F $content;
 close F;
 }
 printf "mdf: %s\n",$mdf;
 
 my $mh = &ipfs_api('add',"$mdf",'&file=qmark',$content);
-#use YAML::Syck qw(Dump); printf qq'--- # mh %s...\n',Dump($mh);
+use YAML::Syck qw(Dump); printf qq'--- # mh %s...\n',Dump($mh);
+die unless exists $mh->{'Hash'};
 my $qm = $mh->{'Hash'};
 printf "qm: %s\n",$qm;
 printf "url: http://127.0.0.1:8080/ipfs/%s\n",$qm;
@@ -97,7 +101,9 @@ my $shard = substr($h36,-3,2);
 my $tic = time();
 my $spot = $tic ^ 0x0000_0000;
 my $oneliner = sprintf "%s: %s.%d [%s](%s)\n",$key, $spot,$i,$what,$url;
-my $shardf = sprintf'%s/tabs-%s.qmk',$QMARKSDIR,$shard;
+my $qdir = "$QMARKSDIR/tabs";
+mkdir $qdir unless -d $qdir;
+my $shardf = sprintf'%s/tabs-%s.qmk',$qdir,$shard;
 open F,'>>',$shardf;
 printf F "%s.%d: [%s](%s)\n",$spot,$i,$what,$url;
 close F;

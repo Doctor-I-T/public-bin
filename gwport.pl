@@ -9,6 +9,7 @@ exit $?;
 
 sub get_gwhostport {
   my $IPFS_PATH = $ENV{IPFS_PATH} || $ENV{HOME}.'/.ipfs';
+  printf "IPFS_PATH: %s\n",$IPFS_PATH;
   my $conff = $IPFS_PATH . '/config';
   local *CFG; open CFG,'<',$conff or warn $!;
   local $/ = undef; my $buf = <CFG>; close CFG;
