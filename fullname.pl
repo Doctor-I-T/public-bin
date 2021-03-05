@@ -38,7 +38,7 @@ if (@ARGV) {
  $key = <STDIN>;
  chomp($key);
 }
-$key =~ s,.*/ip[fhnm]s/,,;
+$key =~ s,.*/ip[fhnm]s/([^/]+).*,$1,;
 $key = 'QmboiLojgoteK2P1NWhAjUutsgCpBmgpbrD1iKDAjSWxf4' unless $key;
 print "key: $key\n" if $all;
 
