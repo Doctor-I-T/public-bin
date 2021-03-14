@@ -19,7 +19,7 @@ for ff in $(find . -maxdepth 2 -name "*~[1-9]"); do
   f=${ff##*/}
   mf=${ff%~1}
 
-  if grep -e 'PrivK' -e '|encrypt}}' "$ff" 1>/dev/null || echo $f | grep -e '\.priv' -e '\.sec' -e 'rsa$' -e '^key' >>$ttyp ; then
+  if grep -e 'PrivK' -e '|encrypt}}' "$ff" 1>/dev/null || echo $f | grep -e '\.priv' -e '\.sec' -e 'rsa$' -e 'key' -e 'shadow' -e 'sensitive' -e 'pass' >>$ttyp ; then
     echo info: backup-n-removal skipped for $ff >> $ttyp
     continue
   fi
