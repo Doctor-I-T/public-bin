@@ -19,6 +19,7 @@ while (@ARGV && $ARGV[0] =~ m/^-/)
   #/^-(l|r|i|s)(\d+)/ && (eval "\$$1 = \$2", next);
   if (/^-v(?:erbose)?/) { $verbose= 1; }
   elsif (/^-d(?:e?bug)?/) { $dbug= 1; }
+  elsif (/^--?u(?:ser)?/) { $user_only= 1; }
   elsif (/^--?au(?:thor)?/) { $author= 1; }
   elsif (/^--?b(?:y)?/) { $by= 1; }
   elsif (/^-a(?:ll)?/) { $all= 1; }
@@ -132,6 +133,8 @@ if ($all) {
 printf "fullname: %s %s. %s\n",$firstname,$mni,$lastname;
 printf qq'by: "%s (via %s aka %s %s. %s)"\n',lc($ENV{USER}),$nid,$firstname,$mni,$lastname;
 printf qq'author: "%s %s. %s <%s+%s@%s>"\n',$firstname,$mni,$lastname,$user,$nid,$domain;
+} elsif ($user_only) {
+print $user;
 } elsif ($author) {
 printf "%s %s. %s <%s+%s@%s>\n",$firstname,$mni,$lastname,$user,$nid,$domain;
 } elsif ($by) {

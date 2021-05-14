@@ -6,12 +6,14 @@
 # usage: uni9 $file | more
 # ---
 
+my $space = 0;
 my %seen = ();
 local $/ = "\n";
 while (<>) {
-   if ($_ =~ /^$/) {
-      print "\n";
+   if ($_ =~ /^\s*$/) {
+      print "\n" unless $space++ > 0;
    } else {
+      $space = 0;
       print $_ unless $seen{$_}++;
    }
 }

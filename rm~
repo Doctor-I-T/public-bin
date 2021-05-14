@@ -15,17 +15,17 @@ eregf=$mutdir/qmedited.log
 
 tic=$(date +%s)
 
-for ff in $(find . -maxdepth 2 -name "*~[1-9]"); do
-  f=${ff##*/}
-  mf=${ff%~1}
+find . -maxdepth 2 -name "*~[1-9]" | while read -r ff; do
+  f="${ff##*/}"
+  mf="${ff%~1}"
 
-  if grep -e 'PrivK' -e '|encrypt}}' "$ff" 1>/dev/null || echo $f | grep -e '\.priv' -e '\.sec' -e 'rsa$' -e 'key' -e 'shadow' -e 'sensitive' -e 'pass' >>$ttyp ; then
+  if grep -e 'PrivK' -e '|encrypt}}' "$ff" 1>/dev/null || echo "$f" | grep -e '\.priv' -e '\.sec' -e 'rsa$' -e 'key' -e 'shadow' -e 'sensitive' -e 'pass' >>$ttyp ; then
     echo info: backup-n-removal skipped for $ff >> $ttyp
     continue
   fi
 
   if [ -e "${mf}~1" ]; then
-  device=$(df --output=source ${mf}~1 | tail -1)
+  device=$(df --output=source "${mf}~1" | tail -1)
   in=$(stat -c %i "${mf}~1")
   #crt=$(sudo debugfs -R "stat <$in>" $device 2>/dev/null | grep 'crtime:')
   crt=$(birth "${mf}~1")
@@ -61,11 +61,9 @@ for ff in $(find . -maxdepth 2 -name "*~[1-9]"); do
 done
 
 
-  qm=$(ipfs add -Q -w -r $cachedir/removed $mutdir)
-  echo $tic: $qm >> $cachedir/removed/qm.log
+(  qm=$(ipfs add -Q -w -r $cachedir/removed $mutdir) && echo $tic: $qm >> $cachedir/removed/qm.log ) &
   
 #find . -level 0 -type f -name "*~?" -exec mv -n {} $HOME/.vim/birth \;
 
-echo .
 exit $?
 true;

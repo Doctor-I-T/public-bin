@@ -12,7 +12,7 @@ while (@ARGV && $ARGV[0] =~ m/^-/)
   #/^-(l|r|i|s)(\d+)/ && (eval "\$$1 = \$2", next);
   if (/^-v(?:erbose)?/) { $verbose= 1; }
   elsif (/^-d(?:ec)?/) { $decode= 1; }
-  elsif (/^-(?:qm?|no?h)/) { $noh= 1; }
+  elsif (/^-(?:qm?|no?h)/) { $noh= 1; } # no header (i.e. qm instead of z2*)
   else                  { die "Unrecognized switch: $_\n"; }
 
 }

@@ -29,6 +29,7 @@ while (@ARGV && $ARGV[0] =~ m/^-/)
   elsif (/^--?k(?:eep)?/) { $keep= 1; }
   elsif (/^--?s(?:hard=)?=?([\w.]*)/) { $shard= $1 ? $1 : shift; }
   elsif (/^-a$/) { $all= 1; }
+  elsif (/^--?n(?:op|ame)?/) { $nop= 1; }
   elsif (/^--?all/) { $all= 1;  $skip= 0; }
   else                  { die "Unrecognized switch: $_\n"; }
 
@@ -39,13 +40,16 @@ eval "\$$1='$2'"while $ARGV[0] =~ /^(\w+)=(.*)/ && shift;
 
 mkdir $shard if (defined $shard && ! -d $shard);
 
+if ($verbose) {
 printf "--- # %s\n",$0;
 printf "log: %s\n",$log;
 printf "skip: %s\n",$skip;
 printf "all: %s\n",$all;
+printf "nop: %s\n",$nop;
 printf "shard: %s\n",$shard;
 printf "keep: %s\n",$keep;
 printf "remove: %s\n",$remove;
+}
 
 local *LOG;
 $log=1 if (-e '_index.log');
@@ -70,7 +74,7 @@ if (@ARGV) {
  my $p = rindex($cwd,'/');
  $root = lc substr($cwd,$p+1); $root =~ tr/aeiou//d;
  $root = substr($root,0,3);
- printf "root: %s\n",$root;
+ printf "root: %s\n",$root if ($verbose);
 }
 
 my @list = ();
@@ -81,136 +85,147 @@ if (@ARGV) {
 }
 
 foreach my $f (sort { substr($a,2) <=> substr($b,2) } @list) {
-  next if ($skip && $f !~ /_/ && $f =~ /^${root}\b/);
-  #printf "file: %s\n",$f; next;
-  next unless ($all || $f =~ /(?:image?|download|un+amed|pimgp|maxres|hqdef|^I_[\da-f]|^f_)|^[0-9a-f_]+n?\.|^x[^a-z]/);
-  #next unless ($f =~ /^(?:IMG_\d|SF-)/);
-  my ($bname,$ext) = ($1,$2) if $f =~ m/(.*)\.([^\.]+)$/;
-      $bname = $f unless $bname;
-  $bname =~ s,^.*/,,;
+   next if ($skip && $f !~ /_/ && $f =~ /^${root}\b/);
+   #printf "file: %s\n",$f; next;
+   next unless ($all || $f =~ /(?:image?|download|un+amed|pimgp|maxres|hqdef|^I_[\da-f]|^f_)|^[0-9a-f_]+n?\.|^x[^a-z]/);
+   #next unless ($f =~ /^(?:IMG_\d|SF-)/);
+   my ($bname,$ext) = ($1,$2) if $f =~ m/(.*)\.([^\.]+)$/;
+   $bname = $f unless $bname;
+   $bname =~ s,^.*/,,;
 
-  $ext =~ s/!.*//;
-  $ext = 'jpg' if ($ext eq 'jpeg');
-  $ext =~ tr/~//d;
+   $ext =~ s/!.*//;
+   $ext = 'jpg' if ($ext eq 'jpeg');
+   $ext =~ tr/~//d;
 
-  if ($ext eq 'data' || $ext eq 'blob') {
-    $ext = &get_ext($f);
-    printf "ext: %s\n",$ext;
-    next unless $ext =~ /(?:jpe*g|png|gif|tif|webp|eps|svg|data|blob)/io
-  }
+   if ($ext eq 'data' || $ext eq 'blob') {
+      $ext = &get_ext($f);
+      printf "ext: %s\n",$ext if ($verbose);
+      next unless $ext =~ /(?:jpe*g|png|gif|tif|webp|eps|svg|data|blob)/io
+   }
 
-  local *F; open F,$f or do { warn qq{"$f": $!}; next };
-  binmode F unless $f =~ m/\.txt/;
-  my $gitid = &githash(F);
-  my $id7 = substr($gitid,0,7);
-  my $md6 = &digest('MD6',F);
-  my $sha2 = &digest('SHA-256',F); # use Digest !
-  my @stats = lstat(F);
-  my $mtime = $stats[8];
-  my $etime = (sort { $a <=> $b } (@stats)[9,10])[0];
-  close F;
-  my $nu = hex($id7);
-  my $pn = hex(substr($md6,-$sz)); # use last sz nibble (default: 16-bit)
-  my $sn = hex(substr(lc$sha2,-8));
-  my $word = &word($pn);
-  my $cname = &word($sn);
-  printf "sha2: %s\n",$sha2;
-  printf "sha2(-6): %s\n",substr(lc$sha2,-6);
-  printf "sn: %s\n",$sn;
-  printf "cname: %s\n",$cname;
-  my $n2 = sprintf "%09u",$nu; $n2 =~ s/(....)/\1_/;
-  # -----------------------------------------------
-  my $attrib;
-  if ($attr == 0) {
-    $attrib = $root;
-  } elsif ($bname =~ m/^([\w-]+)-$word$/) {
-    $attrib = $1;
-  } elsif ($bname =~ m/^([\w-]+)-\w+-unsplash$/) {
-    $attrib = $1;
-  } elsif ($bname =~ m/^([\w-]+)-\w+/) {
-    $attrib = $1;
-  }
-  printf "attrib: %s\n",$attrib;
-  my $ns = ($attrib) ? $attrib : $root;
-  my $n = sprintf "%s-%s.%s",$ns,$word,$ext;
-  
-  my $nf;
-  my $sharddir;
-  if ($shard) {
-    ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime($etime);
-     $yhour = $yday * 24 + $hour + ($min / 60 + $sec / 3600);
-     $yweek=$yday/7;
-     $sharddir = sprintf '%s/%4d',$shard,$year+1900;
-     mkdir $sharddir unless -d $sharddir;
-     $sharddir = sprintf '%s/%4d/WW%02d',$shard,$year+1900,$yweek;
-     mkdir $sharddir unless -d $sharddir;
-     if (&get_nbfiles($sharddir) > 512) {
-        my $MoY = [qw(Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec)];
-        $sharddir = sprintf '%s/%4d/%s',$shard,$year+1900,$MoY->[$mon];
-        mkdir $sharddir unless -d $sharddir;
-        $sharddir = sprintf '%s/%4d/%s/D%03d',$shard,$year+1900,$MoY->[$mon],$yday;
-        mkdir $sharddir unless -d $sharddir;
-        printf "sharddir: %s\n",$sharddir;
-     }
-     $nf = sprintf '%s/%s',$sharddir,$n;
-  } else {
-     $nf = $n;
-  } 
-  printf "%s: %-5s %-14s; %s: #%-9u PN%05u (%s)\n",$id7,$word,$f,$cname,$nu,$pn,$nf;
-  # -----------------------------------------------
-  if ($remove) {
-    unlink $f;
-    printf RM "%u: %s %s\n",$etime,$gitid,$f;
-    next;
-  } elsif ($log) {
-    printf LOG "%u: %s %s\n",$etime,$gitid,$n;
-  }
-  # -----------------------------------------------
-  next if ($f eq $nf);
-  printf META "%u: %s %s %s\n",$mtime,$gitid,$stats[7],$f;
+   local *F; open F,$f or do { warn qq{"$f": $!}; next };
+   binmode F unless $f =~ m/\.txt/;
+   my $gitid = &githash(F);
+   my $id7 = substr($gitid,0,7);
+   my $md6 = &digest('MD6',F);
+   my $sha2 = &digest('SHA-256',F); # use Digest !
+      my @stats = lstat(F);
+   my $mtime = $stats[8];
+   my $etime = (sort { $a <=> $b } (@stats)[9,10])[0];
+   close F;
+   my $nu = hex($id7);
+   my $pn = hex(substr($md6,-$sz)); # use last sz nibble (default: 16-bit)
+      my $sn = hex(substr(lc$sha2,-8));
+   my $word = &word($pn);
+   my $cname = &word($sn);
+   if ($verbose) {
+      printf "sha2: %s\n",$sha2;
+      printf "sha2(-6): %s\n",substr(lc$sha2,-6);
+      printf "sn: %s\n",$sn;
+      printf "cname: %s\n",$cname;
+   }
+   my $n2 = sprintf "%09u",$nu; $n2 =~ s/(....)/\1_/;
+   # -----------------------------------------------
+   my $attrib;
+   if ($attr == 0) {
+      $attrib = $root;
+   } elsif ($bname =~ m/^([\w-]+)-$word$/) {
+      $attrib = $1;
+   } elsif ($bname =~ m/^([\w-]+)-\w+-unsplash$/) {
+      $attrib = $1;
+   } elsif ($bname =~ m/^([\w-]+)-\w+/) {
+      $attrib = $1;
+   }
+   printf "attrib: %s\n",$attrib if ($verbose);
+      my $ns = ($attrib) ? $attrib : $root;
+   my $n = sprintf "%s-%s.%s",$ns,$word,$ext;
 
-  if (-e $nf) {
-    local *F; open F,$nf or do { warn qq{"$nf": $!}; next };
-    binmode F unless $nf =~ m/\.txt/;
-    my $githash = &githash(F);
-    if ($githash eq $gitid) {
-      my $md6n = &digest('MD6',F);
-      if ($md6 eq $md6n) {
-        unlink $f unless $keep; # keep the previous one...
-        next;
-      } else {
-        die  "git id collision between $f and $nf  !"
+   my $nf;
+   my $sharddir;
+   if ($shard) {
+      ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime($etime);
+      $yhour = $yday * 24 + $hour + ($min / 60 + $sec / 3600);
+      $yweek=$yday/7;
+      $sharddir = sprintf '%s/%4d',$shard,$year+1900;
+      mkdir $sharddir unless -d $sharddir;
+      $sharddir = sprintf '%s/%4d/WW%02d',$shard,$year+1900,$yweek;
+      mkdir $sharddir unless -d $sharddir;
+      if (&get_nbfiles($sharddir) > 512) {
+         my $MoY = [qw(Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec)];
+         $sharddir = sprintf '%s/%4d/%s',$shard,$year+1900,$MoY->[$mon];
+         mkdir $sharddir unless -d $sharddir;
+         $sharddir = sprintf '%s/%4d/%s/D%03d',$shard,$year+1900,$MoY->[$mon],$yday;
+         mkdir $sharddir unless -d $sharddir;
+         printf "sharddir: %s\n",$sharddir if ($verbose);
       }
-    } else {
-      printf "%s: %s\n",$gitid,$f;
-      printf "%s: %s\n",$githash,$nf;
-       $n = sprintf "${ns}-%s.%s",$cname,$ext;
-       if ($shard) {
-          $nf = sprintf '%s/%s',$sharddir,$n;
-       } else {
-          $nf = $n;
-       }
-       mkdir 'dup' unless -d 'dup';
-       my $i = 1;
-       while (-e $nf) {
-          local *F; open F,$nf or do { warn qq{"$nf": $!}; next };
-          binmode F unless $nf =~ m/\.txt/;
-          my $githash = &githash(F);
-          if ($githash eq $gitid) {
-            printf "info: -e %s %s == %s*\n",$nf,$githash,$id7;
+      $nf = sprintf '%s/%s',$sharddir,$n;
+   } else {
+      $nf = $n;
+   } 
+   unless ($nop && ! $verbose) {
+      printf "word: %5s\n",$word;
+      printf "%s: %-5s %-14s; %s: #%-9u PN%05u (%s)\n",$id7,$word,$f,$cname,$nu,$pn,$nf;
+   } else {
+      printf "%5s\n",$word;
+   } 
+   # -----------------------------------------------
+   if ($remove) {
+      unlink $f;
+      printf RM "%u: %s %s\n",$etime,$gitid,$f;
+      next;
+   } elsif ($log) {
+      printf LOG "%u: %s %s\n",$etime,$gitid,$n;
+   }
+   # -----------------------------------------------
+   next if ($f eq $nf);
+   printf META "%u: %s %s %s\n",$mtime,$gitid,$stats[7],$f;
+
+   if (-e $nf) {
+      local *F; open F,$nf or do { warn qq{"$nf": $!}; next };
+      binmode F unless $nf =~ m/\.txt/;
+      my $githash = &githash(F);
+      if ($githash eq $gitid) {
+         my $md6n = &digest('MD6',F);
+         if ($md6 eq $md6n) {
             unlink $f unless $keep; # keep the previous one...
-            last;
-          } else {
-          $nf = sprintf "dup/${ns}-%s,%s (%u).%s",$cname,$word,$i++,$ext;
-          }
-       }
-       next if (! -e $f);
-       if (-e $nf) {
-          $nf = sprintf "dup/${ns}-%s.%s",$n2,$ext;
-       }
-    }
-  }
-  rename $f,$nf or die "$f: $!";
+               next;
+         } else {
+            die  "git id collision between $f and $nf  !"
+         }
+      } else {
+         unless ($nop) {
+            printf "%s: %s\n",$gitid,$f;
+            printf "%s: %s\n",$githash,$nf;
+         }
+         $n = sprintf "${ns}-%s.%s",$cname,$ext;
+         if ($shard) {
+            $nf = sprintf '%s/%s',$sharddir,$n;
+         } else {
+            $nf = $n;
+         }
+         mkdir 'dup' unless -d 'dup';
+         my $i = 1;
+         while (-e $nf) {
+            local *F; open F,$nf or do { warn qq{"$nf": $!}; next };
+            binmode F unless $nf =~ m/\.txt/;
+            my $githash = &githash(F);
+            if ($githash eq $gitid) {
+               printf "info: -e %s %s == %s*\n",$nf,$githash,$id7 if $verbose;
+               unlink $f unless $keep; # keep the previous one...
+                  last;
+            } else {
+               $nf = sprintf "dup/${ns}-%s,%s (%u).%s",$cname,$word,$i++,$ext;
+            }
+         }
+         next if (! -e $f);
+         if (-e $nf) {
+            $nf = sprintf "dup/${ns}-%s.%s",$n2,$ext;
+         }
+      }
+   }
+   unless ($nop) {
+     rename $f,$nf or die "$f: $!";
+   }
 }
 
 close META;

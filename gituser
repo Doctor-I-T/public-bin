@@ -16,16 +16,38 @@ gitdir=$(git rev-parse --git-dir)
 prefix=$(git rev-parse --show-prefix)
 headid=$(cat $gitdir/HEAD | cut -d' ' -f2)
 if git remote | grep -q origin; then
-repo=$(git remote get-url origin)
+repo=$(git remote get-url origin | sed -e "s/git@.*\.github\.com:/git@github.com:/");
 else
 remote=$(git remote | head -1)
 if [ "x$remote" != 'x' ]; then
-repo=$(git remote get-url $remote)
+repo=$(git remote get-url $remote);
 else 
 repo=$(git rev-parse --git-dir)
 fi
 fi
 echo repo: $repo
+
+#echo "committer: $(git config user.name) <$(git config user.email)>"
+
+if git config user.name | grep -q '^michel'; then
+githost=michelc
+export GIT_AUTHOR_NAME="Michel"
+export GIT_AUTHOR_EMAIL="michel@ocean"
+#echo "author: $GIT_AUTHOR_NAME <$GIT_AUTHOR_EMAIL>"
+else
+peerid=$(ipfs config Identity.PeerID)
+eval $(perl -S fullname.pl -a $repo | eyml)
+git config committer.name "$fullname"
+git config committer.email "$email"
+export GIT_COMMITTER_NAME="$fullname"
+export GIT_COMMITTER_EMAIL="$email"
+githost=$user
+#echo "author: $GIT_COMMITTER_NAME <$GIT_COMMITTER_EMAIL>"
+fi
+echo "git.author: "
+git var GIT_AUTHOR_IDENT | sed -e 's/^/ /';
+echo "git.commiter: "
+git var GIT_COMMITTER_IDENT | sed -e 's/^/ /';
 
 #prev=$(ipfs add -Q -w $gitdir/config )
 prev=$(git config ipfs.qm)
@@ -52,39 +74,21 @@ tag=$(echo -n "$user@$domain" | ipfs add -Q --raw-leaves --hash identity --cid-b
 echo tag: $tag
 
 if git remote get-url origin 2>/dev/null | grep -e '\.github\.com:' | grep -q -v -e 'gist' 1>/dev/null;  then 
-  remote=$(git remote get-url origin | sed -e "s/git@.*\.github\.com:/git@$user.github.com:/");
+  remote=$(git remote get-url origin | sed -e "s/git@.*\.github\.com:/git@$githost.github.com:/");
   echo remote.origin: $remote
   git remote set-url origin $remote
 fi
 if git remote get-url github 2>/dev/null | grep -q -e '\.github\.com:' 1>/dev/null;  then 
-  remote=$(git remote get-url github | sed -e "s/git@.*\.github\.com:/git@$user.github.com:/");
+  remote=$(git remote get-url github | sed -e "s/git@.*\.github\.com:/git@$githost.github.com:/");
   echo clone_url: $remote
   git remote set-url github $remote
 fi
 
 
+echo "git.user: $fullname <$user@$domain>"
 git config user.name "$fullname"
 git config user.email $user@$domain
 git config ipfs.qm $qm
 git config ipfs.prev $prev
-
-#echo "committer: $(git config user.name) <$(git config user.email)>"
-
-if git config user.name | grep -q '^michel'; then
-user=michelc
-export GIT_AUTHOR_NAME="Michel"
-export GIT_AUTHOR_EMAIL="michel@ocean"
-#echo "author: $GIT_AUTHOR_NAME <$GIT_AUTHOR_EMAIL>"
-else
-peerid=$(ipms config Identity.PeerID)
-eval $(perl -S fullname.pl -a $repo | eyml)
-git config committer.name "$fullname"
-git config committer.email "$email"
-export GIT_COMMITTER_NAME="$fullname"
-export GIT_COMMITTER_EMAIL="$email"
-#echo "author: $GIT_COMMITTER_NAME <$GIT_COMMITTER_EMAIL>"
-fi
-git var GIT_AUTHOR_IDENT
-git var GIT_COMMITTER_IDENT
 
 

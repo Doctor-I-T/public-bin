@@ -1,6 +1,6 @@
 #
 
-assetsdir=${ASSETS_PATH:-$HOME/assets}
+assetsdir=${ASSETS_PATH:-/data/assets}
 mutdir=${MUTABLES_DIR:-$HOME/.../mutables}
 if ! test -e $mutdir; then
 echo x-warn: ! -e ASSETS_PATH=$assetsdir
@@ -9,7 +9,7 @@ if ! test -e $mutdir; then
 echo x-warn: ! -e MUTABLE_DIR=$mutdir
 fi
 if [ "x$IPFS_PATH" = 'x' ]; then
-  export IPFS_PATH=/media/IPFS/IMAGES
+  export IPFS_PATH=/media/$USER/4TB/images/repo
 else
  echo IPFS_PATH: $IPFS_PATH
 fi
@@ -82,7 +82,7 @@ echo $file >> $mutdir/wrapid.log
 echo create wraper
 mh=$(echo "{'data':'CAE=','links':[{'Cid':{'/':'$qm58'},'Name':'$name','Size':$csize}]}" | sed -e "s/'/\"/g" | ipfs dag put -f protobuf)
 echo mh: $mh
-w32=$(echo $mh | perl -S mbase.pl -d | xyml b32)
+w32=$(echo $mh | perl -S mbase -d -b32)
 echo "url: http://$w32.ipfs.dweb.link/$name"
 echo "url: https://$w32.cf-ipfs.com/$name"
 echo $w32 >> $mutdir/BAFYs.log
@@ -96,8 +96,8 @@ echo "wrap: http://cloudflare-ipfs.com/ipfs/$mh/"
 data=$(ipfs block get $mh | xxd -p -c 80)
 len=$(echo $data|wc -c)
 vlen=$(perl -e "printf '%02x',$len/2;")
-echo "f017000"$vlen$data | perl -S mbase.pl -d | grep -v '^[\.\-]'
-eval $(echo "f017000"$vlen$data | perl -S mbase.pl -d | eyml)
+echo "f017000"$vlen$data | perl -S mbase -d -a | grep -v '^[\.\-]'
+eval $(echo "f017000"$vlen$data | perl -S mbase -d -a | eyml)
 echo "qm58: https://ipfs.blockringtm.ml/ipfs/$qm58"
 echo "wrap: https://ipfs.blockringtm.ml/ipfs/$mh/"
 echo "wrap: http://127.0.0.1:8080/ipfs/$mh/"

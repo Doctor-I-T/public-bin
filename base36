@@ -14,6 +14,7 @@ while (@ARGV && $ARGV[0] =~ m/^-/)
   elsif (/^-d(?:ec)?/) { $decode= 1; }
   elsif (/^-(?:qm?|no?h)/) { $noh= 1; }
   elsif (/^-k(?:mu?)/) { $kmu= 1; }
+  elsif (/^-k2j/) { $k2j= 1; }
   elsif (/^-k(?:2k?)/) { $k2= 1; }
   else                  { die "Unrecognized switch: $_\n"; }
 
@@ -27,7 +28,18 @@ if ($noh || $kmu) {
    $buf = substr($buf,2) if (substr($buf,0,1) eq "\x01");
    printf "K%s\n",&encode_base36($buf);
 } elsif ($k2) {
-   $buf = "\x01\x72".$buf;
+   if (substr($buf,0,1) eq "\x01") {
+     $buf = "\x01\x72".substr($buf,2);
+   } else {
+     $buf = "\x01\x72".$buf;
+   }
+   printf "k%s\n",lc &encode_base36($buf);
+} elsif ($k2j) {
+   if (substr($buf,0,1) eq "\x01") {
+     $buf = "\x01\x70".substr($buf,2);
+   } else {
+     $buf = "\x01\x70".$buf;
+   }
    printf "k%s\n",lc &encode_base36($buf);
 } else {
    printf "k%s\n",lc &encode_base36($buf);

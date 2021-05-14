@@ -4,8 +4,9 @@ binmode(STDOUT, "encoding(UTF-8)");
 
 
 my $dec;
-my $radix = 0;
+my $radix=0;
 our $dbug=0;
+my $only=0;
 #--------------------------------
 # -- Options parsing ...
 #
@@ -14,11 +15,17 @@ while (@ARGV && $ARGV[0] =~ m/^-/)
   $_ = shift;
   #/^-(l|r|i|s)(\d+)/ && (eval "\$$1 = \$2", next);
   if (/^-v(?:erbose)?/) { $verbose= 1; }
-  elsif (/^-a(?:ll)?/) { $all= 1; $radix = 95; }
-  elsif (/^--?k(?:2)/) { $k2_only= 1; }
-  elsif (/^--?ba(?:fy)/) { $bafy_only= 1; }
-  elsif (/^--?qm/) { $qm_only= 1; }
-  elsif (/^-(\d+)/) { $radix= $1; }
+  elsif (/^-a(?:ll)?/) { $all= 1; $radix = 95; $only++ }
+  elsif (/^--?b16/) { $want_hex= 1; $only++ }
+  elsif (/^--?h(?:ex)/) { $want_hex= 1; $only++ }
+  elsif (/^--?b36/) { $want_k2= 1; $only++ }
+  elsif (/^--?k(?:2)/) { $want_k2= 1; $only++ }
+  elsif (/^--?b32/) { $want_bafy= 1; $only++ }
+  elsif (/^--?ba(?:fy)/) { $want_bafy= 1; $only++ }
+  elsif (/^--?qm/) { $want_qm= 1; $only++ }
+  elsif (/^--?b58/) { $want_b58= 1; $only++ }
+  elsif (/^--?b64/) { $want_b64= 1; $only++ }
+  elsif (/^-(\d+)/) { $radix= $1; $only++ }
   elsif (/^-de?b(?:ug)?/) { $dbug= 1; }
   elsif (/^-d(?:ec)?/) { $dec= 1; }
   else                  { die "Unrecognized switch: $_\n"; }
@@ -27,18 +34,103 @@ while (@ARGV && $ARGV[0] =~ m/^-/)
 #understand variable=value on the command line...
 eval "\$$1='$2'"while $ARGV[0] =~ /^(\w+)=(.*)/ && shift;
 #--------------------------------
+#print "only: $only\n";
+printf "// alphabet: %s (%uc)\n",&alphab($radix),length(&alphab($radix)) if $verbose;
 
+my $buf = '';
 local $/ = undef;
-my $buf = <STDIN>;
+if (@ARGV) {
+   $buf = <>;
+} else {
+   $buf = <STDIN>;
+}
 local $/ = "\n";
 chomp $buf;
 
 $buf =~ s,.*/ip[fnm]s/,, if ($buf =~ m,/ip[fnm]s/,);
 printf "buf: %s\n",$buf if $verbose;
 
-my $bin = '';
-if ($dec) {
-   if ($buf =~ m/^Qm/) {
+my $bin = undef;
+if ($dec == 1) {
+   ($cidv,$bin,$mhash) = decode_mbase($buf);
+} else {
+   $bin = $buf;
+   $cidv = unpack'C',substr($bin,0,1);
+   $mhash = ($cidv == 1) ? substr($bin,2) : $bin;
+}
+
+my $binp = $bin; $binp =~ tr/\000-\034\134\177-\377/./;
+my $qm = &encode_base58($mhash);
+my $qm36 = &encode_base36($mhash);
+my $quint = &hex2quint(unpack'H*',$mhash);
+my $b16 = unpack'H*',$bin;
+my $b10 = &encode_base10($bin);
+my $b12 = &encode_base12($bin);
+my $b32 = &encode_base32($bin);
+my $ciq = &encode_base32($mhash);
+my $b32z = &encode_base32z($bin);
+my $b36 = &encode_base36($bin);
+my $b43 = &encode_basen($bin,43);
+my $b58 = &encode_base58($bin);
+my $b58f = &encode_base58f($bin);
+my $b63 = &encode_base63($bin);
+my $b64m = &encode_base64m($bin); $b64m =~ tr /=//d;
+my $b64u = &encode_base64u($bin); $b64u =~ tr /=//d;
+my $b64e = &encode_basen($bin,64);
+my $brx = &encode_basen($bin,$radix) if ($radix);
+
+if($all) {
+   print "--- # other encoding for z.$qm\n";
+   printf "bin: '%s'\n",$binp;
+   printf "qm: %s\n",$qm;
+   printf "ciq: %s\n",$ciq;
+   printf "qm36: K%s\n",$qm36;
+   printf "quint: %s\n",$quint;
+   printf "b10: 9%s\n",$b10;
+   printf "b12: E%s\n",$b12;
+   printf "b16: f%s\n",$b16;
+   printf "b32: B%s\n",$b32;
+   printf "b32z: h%s\n",lc$b32z;
+   printf "b36: k%s\n",lc$b36;
+   printf qq'b39: "*%s*"\n',&encode_basen($bin,39);
+   printf qq'b43: "|%s|"\n',$b43;
+   printf "b58: z%s\n",$b58;
+   printf "b58f: Z%s\n",$b58f;
+   printf "b63l: l%s\n",$b63;
+   printf "b64m: m%s\n",$b64m;
+   printf "b64u: u%s\n",$b64u;
+   printf "b64e: %s\n",$b64e;
+   printf "b%02ux: %s\n",$radix,$brx if $radix;
+} elsif ($only ==  1) {
+   if ($want_qm) {
+      print $qm;
+   } elsif ($want_hex) {
+      printf 'f%s',lc$b16;
+   } elsif ($want_k2) {
+      printf 'k%s',lc$b36;
+   } elsif ($want_bafy) {
+      printf 'b%s',lc$b32;
+   } elsif ($radix) {
+      printf '%s%s',&multif($radix),$brx;
+   } else {
+      printf 'z%s',$b58;
+   }
+} else {
+  print "qm: $qm\n" if $want_qm ;
+  printf "b58: z%s\n",$b58 if $want_b58 ;
+  printf "b16: f%s\n",lc$b16 if $want_hex || $want_b16;
+  printf "b32: b%s\n",lc$b32 if $want_bafy || $want_b32;
+  printf "b36: k%s\n",lc$b36 if $want_k2 || $want_b36;
+  printf "b64u: u%s\n",lc$b64u if $want_b64;
+  printf "b%02ux: %s%s\n",$radix,&multif($radix),$brx if $radix;
+}
+
+
+exit $?;
+
+sub decode_mbase {
+ my $qm = shift;
+   if ($qn =~ m/^Qm/) {
       $cidv = 0;
       $mhash = &decode_base58($buf);
       $bin = pack('H*','0170'). &decode_base58($buf);
@@ -72,70 +164,8 @@ if ($dec) {
       $cidv = unpack'C',substr($bin,0,1);
       $mhash = ($cidv == 1) ? substr($bin,2) : $bin;
    }
-} else {
-   $bin = $buf;
-   $cidv = unpack'C',substr($bin,0,1);
-   $mhash = ($cidv == 1) ? substr($bin,2) : $bin;
+   return ($cidv,$bin,$mhash);
 }
-my $binp = $bin; $binp =~ tr/\000-\034\134\177-\377/./;
-my $qm = &encode_base58($mhash);
-my $qm36 = &encode_base36($mhash);
-my $quint = &hex2quint(unpack'H*',$mhash);
-my $b16 = unpack'H*',$bin;
-my $b10 = &encode_base10($bin);
-my $b12 = &encode_base12($bin);
-my $b32 = &encode_base32($bin);
-my $ciq = &encode_base32($mhash);
-my $b32z = &encode_base32z($bin);
-my $b36 = &encode_base36($bin);
-my $b43 = &encode_basen($bin,43);
-my $b58 = &encode_base58($bin);
-my $b58f = &encode_base58f($bin);
-my $b63 = &encode_base63($bin);
-my $b64m = &encode_base64m($bin); $b64m =~ tr /=//d;
-my $b64u = &encode_base64u($bin); $b64u =~ tr /=//d;
-my $b64e = &encode_basen($bin,64);
-
-if ($qm_only) {
-print $qm;
-} elsif ($k2_only) {
-printf 'k%s',lc$b36;
-} elsif ($bafy_only) {
-printf 'b%s',lc$b32;
-} else {
-print "--- # other encoding for z.$qm\n";
-printf "bin: '%s'\n",$binp;
-printf "qm: %s\n",$qm;
-printf "ciq: %s\n",$ciq;
-printf "qm36: K%s\n",$qm36;
-printf "quint: %s\n",$quint;
-printf "b10: 9%s\n",$b10;
-printf "b12: E%s\n",$b12;
-printf "b16: f%s\n",$b16;
-printf "b32: B%s\n",$b32;
-printf "b32z: h%s\n",lc$b32z;
-printf "b36: k%s\n",lc$b36;
-printf qq'b39: "*%s*"\n',&encode_basen($bin,39);
-printf qq'b43: "|%s|"\n',$b43;
-printf "b58: z%s\n",$b58;
-printf "b58f: Z%s\n",$b58f;
-printf "b63l: l%s\n",$b63;
-printf "b64m: m%s\n",$b64m;
-printf "b64u: u%s\n",$b64u;
-printf "b64e: %s\n",$b64e;
-}
-
-if ($all || $radix ) {
-print "---\n";
-for (2 .. $radix) {
-printf "m%d: %s%s\n",$_,&multif($_),&encode_basen($bin,$_);
-}
-print "...\n";
-}
-
-exit $?;
-
-#
 
 # -----------------------------------------------------------------------
 sub hex2quint {
@@ -379,9 +409,8 @@ sub alphab {
   } else { # n < 94
     $alphab = '-0123456789'. 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.
                              'abcdefghijklmnopqrstuwvxyz'.
-             q/+.@$%_,~`'=;!^[]{}()#&/.      '<>:"/\\|?*'; #
+             q/+.@$%_,~`'=;!^[]{}()#&/.      '<>:"/\\|?*'. "" . ' 'x(256-95); #
   }
-  # printf "// alphabet: %s (%uc)\n",$alphab,length($alphab);
   return $alphab;
 }
 # --------------------------------------------
