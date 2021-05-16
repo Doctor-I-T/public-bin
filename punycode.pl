@@ -3,6 +3,12 @@
 use Encode;
 use Encode::Punycode;
 
+#use utf8;
+#binmode(STDOUT,":utf8");  # c.f.: http://acis.openlib.org/dev/perl-unicode-struggle.html
+use open qw(:std :encoding(utf8));
+
+
+
 while (<STDIN>) {
  my $ans = decode('utf8',$_);
  chomp($ans);

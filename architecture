@@ -1,0 +1,15 @@
+#
+architecture=""
+case $(uname -m) in
+    i386)   architecture="386" ;;
+    i686)   architecture="386" ;;
+    x86_64) architecture="amd64" ;;
+    arm)    dpkg --print-architecture | grep -q "arm64" && architecture="arm64" || architecture="arm" ;;
+esac
+
+echo uname: "'$(uname -1)'"
+lsb_release -a | sed -e 's/ ID/-ID/'
+echo arch: $(arch)
+echo architecture: $architecture
+
+exit $?
