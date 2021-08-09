@@ -6,12 +6,14 @@ my $key=&get_key();
 my $max = undef;
 my $all = 0;
 our $seed = undef;
-while (@ARGV && $ARGV[0] =~ m/^-/)
-{
+while (@ARGV && $ARGV[0] =~ m/^-/) {
   $_ = shift;
   #/^-(l|r|i|s)(\d+)/ && (eval "\$$1 = \$2", next);
   if (/^-v(?:erbose)?/) { $verbose= 1; }
   elsif (/^-a(?:ll)?/) { $all= 1; }
+  elsif (/^-k(?:ey)?/) { $key= shift; }
+  elsif (/^-t(?:ics?)?/) { $tic= shift; }
+
   elsif (/^-y(?:ml)?/) { $yml= 1; }
   else                  { die "Unrecognized switch: $_\n"; }
 
@@ -19,10 +21,13 @@ while (@ARGV && $ARGV[0] =~ m/^-/)
 #understand variable=value on the command line...
 eval "\$$1='$2'"while $ARGV[0] =~ /^(\w+)=(.*)/ && shift;
 
+my $intent;
 if (exists $ARGV[0] && $ARGV[0] =~ m/^\d+$/) {
   $max = shift;
+  $intent =  sprintf "Get a random number smaller than %s",$max||'max';
+} else {
+  $intent =  join' ',@ARGV;
 }
-my $intent =  sprintf "Get a random number smaller than %s",$max||'max';
 
 my $IV;
 if (defined $seed) {

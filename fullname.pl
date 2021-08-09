@@ -146,6 +146,7 @@ printf "%s %s. %s\n",$fullname[0],substr($fullname[1],0,1),$fullname[-2];
 
 if ($all) {
    printf "ini: %s%s%s\n",uc(substr($fullname[0],0,1)),uc(substr($fullname[1],0,1)),uc(substr($fullname[-2],0,1));
+   printf "allname: %s\n",join' ',@fullname;
    printf "firstname: %s\n",$fullname[0];
    printf "midlename: %s\n",$fullname[1];
    printf "lastname: %s\n",$fullname[-2];
@@ -175,7 +176,7 @@ sub get_file {
 sub write_file {
   my $file = shift;
   my $dirname = substr($file,0,rindex($file,'/'));
-  mkdir $dirname unless -d $dirname;
+  mkdirp $dirname unless -d $dirname;
   local *F; open F,'>',$file or die $!; # TBD use semaphore
   binmode(F) unless $file =~ m/\.txt/;
   print F $_[0];
@@ -183,7 +184,16 @@ sub write_file {
   return $?;
 }
 # -----------------------------------------------------------------------
-# TBD : implemend a mkdir -p 
+sub mkdirp { # implemend a mkdir -p
+  my @fp = ();
+  for my $p (split('/',$_[0])) {
+    push @fp,$p;
+    my $fp = join'/',@fp;
+    printf "fp: %s\n",$fp;
+    mkdir $fp unless -d $fp;
+  }
+  return $?;
+}
 # -----------------------------------------------------------------------
 sub get_ipfs_content {
   my $ipath=shift;

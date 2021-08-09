@@ -50,20 +50,24 @@ echo "git.commiter: "
 git var GIT_COMMITTER_IDENT | sed -e 's/^/ /';
 
 #prev=$(ipfs add -Q -w $gitdir/config )
-prev=$(git config ipfs.qm)
+if ! prev=$(git config ipfs.qm); then
 prev=${prev:-QmUNLLsPACCz1vLxQVkXqqLX5R1X345qqfHbsf67hvA3Nn}
+fi
 if [ "x$IPFS_PATH" != 'x' ]; then
 echo  IPFS_PATH: $IPFS_PATH
 fi
 if [ ! -e $HOME/.ipfsignore ]; then
-  ipfs get -o $HOME/.ipfsignore QmUAf7KZ7NMYwajPrBG6g2VLxBmAjrnXXETMwjVbUsBmP5
+# ipfs get -o $HOME/.ipfsignore QmUAf7KZ7NMYwajPrBG6g2VLxBmAjrnXXETMwjVbUsBmP5
+  ipfs get -o $HOME/.ipfsignore QmUdRhGREmsnMcFCmcQWquZ6g6hnh11drhUCC62f1jFSiz
 fi
 if [ -e $gitdir/$headid ]; then
-qm=$(ipfs add --ignore-rules-path=$HOME/.ipfsignore -Q -w -r $gitdir/config $gitdir/$headid . )
+qm=$(ipfs add --ignore-rules-path=$HOME/.ipfsignore -Q -w --progress=true -r $gitdir/config $gitdir/$headid . )
 else
-qm=$(ipfs add --ignore-rules-path=$HOME/.ipfsignore -Q -w -r $gitdir/config . )
+qm=$(ipfs add --ignore-rules-path=$HOME/.ipfsignore -Q -w --progress=true -r $gitdir/config . )
 fi
+if ipfs files stat /ipfs/$prev; then
 qm=$(ipfs object patch add-link $qm 'prev' $prev)
+fi
 echo qm: $qm
 
 

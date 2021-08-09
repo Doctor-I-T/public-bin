@@ -75,9 +75,9 @@ $content .= "\n";
 
 die unless $content;
 
+my $mdd = "$QMARKSDIR/qmrk";
 my $mdf = sprintf'qmark-%03d.md',$stamp;
 if (1) {
-my $mdd = "$QMARKSDIR/qmrk";
 mkdir $mdd unless -d $mdd;
 printf "mdf: file://%s/%s\n",$mdd,$mdf;
 open F,'>',"$mdd/$mdf";
@@ -86,7 +86,8 @@ close F;
 }
 printf "mdf: %s\n",$mdf;
 
-my $mh = &ipfs_api('add',"$mdf",'&file=qmark',$content);
+#my $mh = &ipfs_api('add',"$mdf",'&file=qmark',$content);
+my $mh = &ipfs_api_cli('add',"$mdd/$mdf",'&file=qmark',$content);
 use YAML::Syck qw(Dump); printf qq'--- # mh %s...\n',Dump($mh);
 die unless exists $mh->{'Hash'};
 my $qm = $mh->{'Hash'};
@@ -132,6 +133,17 @@ sub encode_base36 {
   return $k36;
 }
 
+# -----------------------------------------------------
+sub ipfs_api_cli {
+   my ($cmd,$file,$query,undef) = @_;
+   local *EXEC; open EXEC, sprintf "ipfs %s %s |",$cmd,$file or die $!; local $/ = "\n";
+      while (<EXEC>) {
+         $mh->{$2} = $1 if m/added\s+(\w+)\s+(.*)/;
+         $mh->{'Hash'} = $1 if m/^(?:added\s+)?(Qm\S+)/;
+      }
+      close EXEC;
+      return $mh;
+}
 # -----------------------------------------------------
 sub ipfs_api {
    my $api_url; # ipfs config Addresses.API

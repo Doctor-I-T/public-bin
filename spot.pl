@@ -27,7 +27,7 @@ if ($dbug) {
 
 
 # get you space and time location (memory drop point)
-my $time = int($^T / 61) * 59;
+my $time = int($^T / 61) * 59; # in the past as < $^T
 my $spot = &get_spot($time,@ARGV);
 printf "spot: %s\n",$spot;
 
