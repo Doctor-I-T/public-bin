@@ -49,16 +49,19 @@ git var GIT_AUTHOR_IDENT | sed -e 's/^/ /';
 echo "git.commiter: "
 git var GIT_COMMITTER_IDENT | sed -e 's/^/ /';
 
-#prev=$(ipfs add -Q -w $gitdir/config )
-if ! prev=$(git config ipfs.qm); then
-prev=${prev:-QmUNLLsPACCz1vLxQVkXqqLX5R1X345qqfHbsf67hvA3Nn}
-fi
 if [ "x$IPFS_PATH" != 'x' ]; then
 echo  IPFS_PATH: $IPFS_PATH
+else
+export IPFS_PATH=$HOME/.../ipfs/usb/SECGIT
+fi
+if ! prev=$(git config ipfs.qm); then
+#prev=$(ipfs add -Q -w $gitdir/config )
+prev=${prev:-QmUNLLsPACCz1vLxQVkXqqLX5R1X345qqfHbsf67hvA3Nn}
 fi
 if [ ! -e $HOME/.ipfsignore ]; then
 # ipfs get -o $HOME/.ipfsignore QmUAf7KZ7NMYwajPrBG6g2VLxBmAjrnXXETMwjVbUsBmP5
-  ipfs get -o $HOME/.ipfsignore QmUdRhGREmsnMcFCmcQWquZ6g6hnh11drhUCC62f1jFSiz
+# ipfs get -o $HOME/.ipfsignore QmUdRhGREmsnMcFCmcQWquZ6g6hnh11drhUCC62f1jFSiz
+  ipfs get -o $HOME/.ipfsignore QmRd9vefqjfyWx5d3rSie5EXzj6XCfPhi2brVcSrxS4Qhr
 fi
 if [ -e $gitdir/$headid ]; then
 qm=$(ipfs add --ignore-rules-path=$HOME/.ipfsignore -Q -w --progress=true -r $gitdir/config $gitdir/$headid . )
