@@ -52,6 +52,7 @@ while (@ARGV && $ARGV[0] =~ m/^-/)
     $human = 1,       next if $arg =~ m/^-d$/;
     $mail = 1,        next if $arg =~ m/^-m(?:ail)?$/;
     $log = 1,        next if $arg =~ m/^-l(?:og)?$/;
+    $release = 1,    next if $arg =~ m/^--?r(?:el(?:ease)?)?$/i;
     $ident = 1,      next if $arg =~ m/^--?ident$/i;
     $id = 1,         next if $arg =~ m/^-i(?:d)?$/i;
     $rcs = $1 ? "$1" : shift || 'file.txt', next if $arg =~ m/^--?r(?:cs)?+(\.*)?$/;
@@ -172,7 +173,7 @@ sub affiche {
   } elsif ($tag =~ /week/io) {
     printf "WW%02d.%s\n",
          $yweek+1,
-         chr(ord('A')+$low_id),
+         chr(ord('A')+$low_id);
   } elsif ($tag =~ /id/io) {
     my $tod = ($time-1)%(24*3600); # time of the day
     my $d16 = int( ($time-1)/(24*3600) ) & 0xFFFF; # 16-bit date
@@ -233,9 +234,9 @@ sub affiche {
     my $age = ($time - $birth)/3600;
     printf "%s: %08u; %02d days, %02d months, %.2fyo\n",$event,$time - $birth,
            $age / $_1d, $age / $_1mo, $age/$_1yr;
-  } elsif ($touch) {
-    printf "%02d%02d%02d%02d%02d\n",
-         $mon+1,$mday,$hour,$min,$year%100;
+  } elsif ($touch) { # [[CC]YY]MMDDhhmm[.ss]
+    printf "touch -t %02d%02d%02d%02d%02d.%02d\n",
+         $year%100,$mon+1,$mday,$hour,$min,$sec;
   } elsif ($http) {
     printf "%3s %2d %02d:%02d %3s %4d\n",
            $DoW[$wday],$MoY[$mon],$mday,$hour,$min,$ENV{'TZ'},
@@ -249,6 +250,18 @@ sub affiche {
   } elsif ($log) {
     printf "M4GC:%08X\t%4d.%02d.%02d.%02d.%02d.%02d\n",$time,
        $year+1900,$mon+1,$mday,$hour,$min,$sec;
+  } elsif ($release) {
+       my $_1yrs = 365.25 * 24 * 3600;
+       my $birth = 1630501740; # D244 15:09 Sep,1  - W35
+       my $age = ( $time - $birth ) / (1641392221 - $birth); # using 'late-time'
+       my $rweek=($yday+&fdow($time))/7;
+       my $rel_id = int($rweek) * 4;
+       my $low_id = int(($wday+($hour/24)+$min/(24*60))*4/7);
+       my $revision = ($rev_id + $low_id) / 100;
+       my $major = $rel_id;
+       my $rev = $low_id;
+       printf 'v%d.%.1f.%d',int($age),int($major/10)/10,$major%10+$rev;
+
   } elsif ($cvs) {
     my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = gmtime($time);
     printf "date\t%4d.%02d.%02d.%02d.%02d.%02d\n",
@@ -323,6 +336,19 @@ sub hday { # hash of the day
   #return  ($digest ^ ($digest>>10) ^ ($digest>>20)) & 0xFFF; # period 11yr
   
 }
+
+sub fdow { # first day of first week (WW01)...
+   my $tic = shift;
+   use Time::Local qw(timelocal);
+   ##     0    1     2    3    4     5     6     7
+   #y ($sec,$min,$hour,$day,$mon,$year,$wday,$yday)
+   my $year = (localtime($tic))[5]; my $yr4 = 1900 + $year ;
+   my $first = timelocal(0,0,0,1,0,$yr4);
+   $fdow = (localtime($first))[6];
+   #printf "1st: %s -> fdow: %s\n",&hdate($first),$fdow;
+   return $fdow;
+}
+
 
 
 do{$|=1;print "Press any key to continue ...";local$_=<STDIN>} unless defined $ENV{SHLVL} ;

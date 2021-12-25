@@ -1,6 +1,8 @@
 #
 
-set -xe
+gwurl=http://127.0.0.1:8390
+
+#set -x
 echo "--- # ${0##*/}"
 pwd=$(pwd)
 top=$(git rev-parse --show-toplevel)
@@ -109,7 +111,7 @@ echo head: $head
 fi
 echo curl -L https://ipfs.blockring™.ml/ipfs/$qmgit/info/refs
 curl -sI https://gateway.pinata.cloud/ipfs/$qmgit/info/refs | grep -i 'ipfs' 2>/dev/null &
-curl -sL -m 3 https://ipfs.blockring™.ml/ipfs/$qmrepo/$symb/info/refs
+curl -sL -m 3 ${gwurl}/ipfs/$qmrepo/$symb/info/refs
 
 # update source remote in .git/config
 echo repo: http://gitea.localhost:8080/ipfs/$qmrepo/$symb

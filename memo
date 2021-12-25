@@ -1,7 +1,7 @@
 #
 
 MEMO_PATH=${MEMO_PATH:-$HOME/.memo}
-find ~ -maxdepth 3 -path '*wiki/memo/*.md' | cat - $MEMO_PATH/memo.* | perl -S uniq.pl | perl -np -e 's/[\r\\]\s$/\x07/g;' | grep --color=always -A2 $@ | sed -e 's/\x07/\x0A/g'
+cat $(find ~ -maxdepth 3 -path '*wiki/memo/*.md') $MEMO_PATH/memo.* | perl -S uniq.pl | perl -np -e 's/[\r\\]\s$/\x07/g;' | grep --color=always -A2 "$@" | sed -e 's/\x07/\x0A/g'
 
 
 # $Source: /my/bourne/shell/scripts/memo,v $

@@ -55,6 +55,14 @@ if ($key =~ m/^Qm/) {
  $bindata = substr($bindata,-32); # remove header
  printf "bin: %s\n",unpack'H*',$bindata if $all;
 # ----------------------------------------------------------------
+} elsif ($key =~ m/^12D3/) {
+ $ns = 'urn:ipns:'.$key;
+ $bindata = &decode_base58($key);
+ my $cid = "\0".substr($bindata,0,3);
+ $bindata = substr($bindata,3); # remove header
+ printf "mh58: %s (%uc, %uB) : f%s...\n",$key,length($key),
+        length($bindata), substr(unpack('H*',$bindata),0,11) if $dbug;
+ printf "bin: %s\n",unpack'H*',$bindata if $all;
 } elsif ($key =~ m/^z/) {
  $ns = 'urn:ipfs:'.$key;
  $bindata = &decode_base58(substr($key,1));
@@ -79,9 +87,7 @@ printf "sha2: f%s\n",unpack('H*',$bindata) if $dbug;
      $bindata = substr($bindata,4);
   } elsif($cid eq "\x12\x20") {
      $bindata = substr($bindata,2); # remove header
-  } 
-
-
+  }
 } else { # if key is plain text ... do a sha2 on it
   $ns = 'urn:holo*:'.$key;
   $key =~ s/\\n/\n/g;

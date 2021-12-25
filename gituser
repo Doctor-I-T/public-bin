@@ -64,7 +64,10 @@ if [ ! -e $HOME/.ipfsignore ]; then
   ipfs get -o $HOME/.ipfsignore QmRd9vefqjfyWx5d3rSie5EXzj6XCfPhi2brVcSrxS4Qhr
 fi
 if [ -e $gitdir/$headid ]; then
-qm=$(ipfs add --ignore-rules-path=$HOME/.ipfsignore -Q -w --progress=true -r $gitdir/config $gitdir/$headid . )
+top=$(git rev-parse --show-toplevel)
+files=$(git ls-tree -r master --name-only $top | perl -S isfile.pl)
+#echo "files: $files"
+qm=$(ipfs add --ignore-rules-path=$HOME/.ipfsignore -Q -w --progress=true -r $gitdir/config $gitdir/$headid $files )
 else
 qm=$(ipfs add --ignore-rules-path=$HOME/.ipfsignore -Q -w --progress=true -r $gitdir/config . )
 fi

@@ -30,7 +30,7 @@ my $i = 0;
 my $p = 'qMark';
 my ($url,$what) = ('https://example.com','URL Example');
 local $EXEC = 'xclip -o --selection c';
-open $EXEC,"$EXEC|";
+open $EXEC,"$EXEC|" or warn $!;
 while (<$EXEC>) {
    chomp;
    if (/^http/) {
@@ -61,7 +61,9 @@ while (<$EXEC>) {
    }
    $p = $_;
 }
+close $EXEC;
 
+die unless @set;
 
 # create qmark:
 

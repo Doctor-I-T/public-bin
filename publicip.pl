@@ -74,7 +74,9 @@ my $publicipfile = $ENV{WWW}.'/log/publicip.yml';
 open F,'>>',$publicipfile;
 print F "- ",$pubip,"\n";
 close F;
+if (system "which odrive 1>/dev/null 2>&1") {
 system "odrive refresh $publicipfile > /dev/null";
+}
 my $cityfile = $ENV{WWW}.'/log/city.log';
 open F,'>>',$cityfile;
 printf F "%u: %s,%s\n",$^T,$city,$country;
@@ -82,6 +84,7 @@ close F;
 
 # sightseeing:
 $country =~ s/ +/+/g;
+$city =~ s/ /%20/g;
 printf "url: %s?q=sightseeing+near+%s,+%s\n",'https://www.google.com/search',$city,$country;
 printf "url: %s?q=%s,+%s\n",'https://www.bing.com/search',$city,$country;
 printf "url: %s?q=%s,+%s\n",'https://www.facebook.com/search/top/',$city,$country;

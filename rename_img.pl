@@ -87,7 +87,7 @@ if (@ARGV) {
 foreach my $f (sort { substr($a,2) <=> substr($b,2) } @list) {
    next if ($skip && $f !~ /_/ && $f =~ /^${root}\b/);
    #printf "file: %s\n",$f; next;
-   next unless ($all || $f =~ /(?:image?|download|un+amed|pimgp|maxres|hqdef|^I_[\da-f]|^f_)|^[0-9a-f_]+n?\.|^x[^a-z]/);
+   next unless ($all || $f =~ /(?:image?|^ind|download|un+amed|pimgp|maxres|hqdef|^I_[\da-f]|^f_)|^[0-9a-f_]+n?\.|^x[^a-z]/);
    #next unless ($f =~ /^(?:IMG_\d|SF-)/);
    my ($bname,$ext) = ($1,$2) if $f =~ m/(.*)\.([^\.]+)$/;
    $bname = $f unless $bname;

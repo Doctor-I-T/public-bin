@@ -148,6 +148,10 @@ sub decode_mbase {
       $cidv = 1;
       $bin = &decode_base58(substr($buf,1));
       $mhash = substr($bin,2);
+   } elsif ($buf =~ m/^Z/) { # decode multiformat ...
+      $cidv = 1;
+      $bin = &decode_base58f(substr($buf,1));
+      $mhash = substr($bin,2);
    } elsif ($buf =~ m/^b/i) {
       $bin = &decode_base32(substr($buf,1));
       $cidv = unpack'C',substr($bin,0,1);
@@ -315,12 +319,21 @@ sub encode_base58 { # btc
   return $h58;
 }
 # ------------------
-sub decode_base58 {
+sub decode_base58f {
   use Math::BigInt;
   use Encode::Base58::BigInt qw();
   my $s = $_[0];
   # $e58 =~ tr/a-km-zA-HJ-NP-Z/A-HJ-NP-Za-km-z/;
-  $s =~ tr/A-HJ-NP-Za-km-z/a-km-zA-HJ-NP-Z/;
+  $s =~ tr/IO0l/iooL/; # flickr
+  my $bint = Encode::Base58::BigInt::decode_base58($s);
+  my $bin = Math::BigInt->new($bint)->as_bytes();
+  return $bin;
+}
+sub decode_base58 {
+  use Math::BigInt;
+  use Encode::Base58::BigInt qw();
+  my $s = $_[0];
+  $s =~ tr/A-HJ-NP-Za-km-zIO0l/a-km-zA-HJ-NP-ZiooL/; # BTC
   my $bint = Encode::Base58::BigInt::decode_base58($s);
   my $bin = Math::BigInt->new($bint)->as_bytes();
   return $bin;
