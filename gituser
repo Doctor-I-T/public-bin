@@ -101,4 +101,5 @@ git config user.email $user@$domain
 git config ipfs.qm $qm
 git config ipfs.prev $prev
 
+1; # vim: syntax=sh
 
