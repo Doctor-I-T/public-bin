@@ -9,9 +9,15 @@
 # usage:
 #  xclip -o | perl -S qmark.pl setname
 
-
 my $stamp = time()%691;
-my $set = shift || sprintf 'qmark-%d',$stamp;
+my $set;
+if (@ARGV) {
+   $set = join(' ',@ARGV);
+   $set =~ s/[^a-z0-9_\-\.]+/-/gi;
+   $set = lc $set;
+} else {
+   $set = sprintf 'qmark-%d',$stamp;
+}
 
 if ($set =~ m/PN/) {
   $ENV{IPFS_PATH} = $ENV{HOME}.'/.../ipfs/usb/XPN';
@@ -26,10 +32,11 @@ my @set = ();
 printf "--- # %s\n",$0;
 printf "IPFS_PATH: %s\n",$ENV{IPFS_PATH};
 printf "QMARKSDIR: %s\n",$QMARKSDIR;
+printf "set: %s\n",$set;
 my $i = 0;
 my $p = 'qMark';
 my ($url,$what) = ('https://example.com','URL Example');
-local $EXEC = 'xclip -o --selection c';
+local $EXEC = 'xclip -o -selection c';
 open $EXEC,"$EXEC|" or warn $!;
 while (<$EXEC>) {
    chomp;
@@ -94,7 +101,9 @@ use YAML::Syck qw(Dump); printf qq'--- # mh %s...\n',Dump($mh);
 die unless exists $mh->{'Hash'};
 my $qm = $mh->{'Hash'};
 printf "qm: %s\n",$qm;
-printf "url: http://127.0.0.1:8080/ipfs/%s\n",$qm;
+my ($gwhost,$gwport) = &get_gwhostport();
+printf "init: |-\n ipfsd.sh start %s\n",$ENV{IPFS_PATH};
+printf "url: http://%s:%s/ipfs/%s\n",$gwhost,$gwport,$qm;
 my $url = sprintf 'http://gateway.ipfs.io/ipfs/%s',$qm;
 my $what = sprintf 'qMark %s %d items: %s',$stamp,scalar(@set),$set;
 my $hash = &khash('SHA256','curl -sL ',$url);
@@ -217,6 +226,18 @@ sub ipfs_api {
    }
 }
 # -----------------------------------------------------
+sub get_gwhostport {
+  my $IPFS_PATH = $ENV{IPFS_PATH} || $ENV{HOME}.'/.ipfs';
+  my $conff = $IPFS_PATH . '/config';
+  local *CFG; open CFG,'<',$conff or warn $!;
+  local $/ = undef; my $buf = <CFG>; close CFG;
+  use JSON qw(decode_json);
+  my $json = decode_json($buf);
+  my $gwaddr = $json->{Addresses}{Gateway};
+  my (undef,undef,$gwhost,undef,$gwport) = split'/',$gwaddr,5;
+      $gwhost = '127.0.0.1' if ($gwhost eq '0.0.0.0');
+  return ($gwhost,$gwport);
+}
 sub get_apihostport {
   my $IPFS_PATH = $ENV{IPFS_PATH} || $ENV{HOME}.'/.ipfs';
   my $conff = $IPFS_PATH . '/config';
