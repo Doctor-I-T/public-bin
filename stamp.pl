@@ -142,6 +142,10 @@ while (@ARGV) {
   elsif ($date =~ /(\d{4})\.(\d{2})\.(\d{2})\.(\d{2})\.(\d{2})\.(\d{2})/) {
     ($year,$mon,$mday,$hour,$min,$sec) = ($1,$2,$3,$4,$5,$6);
     $tic= timegm($sec,$min,$hour,$mday,$mon-1,$year);
+  } elsif ($date =~ /[0-9]{19}/) { # 1234567890123456789 ns
+      $tic = $date / 1000_000_000;
+  } elsif ($date =~ /[0-9]{13}/) { # 1234567890123 ms
+      $tic = $date / 1000;
   } else {
     eval "\$tic= $date";
   }
