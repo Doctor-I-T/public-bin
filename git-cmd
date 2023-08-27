@@ -4,7 +4,7 @@
 #  having a git that works from any location
 #
 #  usage
-#  git-commit <dir|file> -m "$msg"
+#  git-commit -m "$msg" <dir|file>
 
 pgm=${0##*/}
 cmd=$(echo $pgm | cut -d'-' -f 2)
@@ -14,8 +14,9 @@ if [ $cmd = 'cmd' ]; then
 fi
   
 set -e
-for last in "$@"; do true; done
-echo "last: $last"
+for i; do last="$i"; done
+#for last in "$@"; do true; done
+#echo "last-arg: $last"
 
 if [ "$cmd" = 'push' ]; then
   if [ -d "$1" ]; then
@@ -45,8 +46,8 @@ if [ "$cmd" = 'commit' ]; then
      git add $last
   fi
   gituser
-  echo git $cmd $*
-  git $cmd -uno $*
+  echo "git $cmd '$@'"
+  git $cmd -uno "$@"
 else
   if echo "$last" | grep -q -e '^/'; then
     if test -e $last; then
@@ -54,7 +55,7 @@ else
     \cd $dir
     perl -S sname.pl "$dir" >/dev/null
     echo "cd $(pwd -P); git $cmd $*"
-    /usr/bin/git $cmd $*
+    /usr/bin/git $cmd "$@"
     fi
   fi
 fi
