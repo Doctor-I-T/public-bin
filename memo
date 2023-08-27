@@ -1,7 +1,28 @@
 #
 
+lof=$HOME/.cache/memo/memo.lof
 MEMO_PATH=${MEMO_PATH:-$HOME/.memo}
-cat $(find ~ -maxdepth 3 -path '*wiki/memo/*.md') $MEMO_PATH/memo.* | perl -S uniq.pl | perl -np -e 's/[\r\\]\s$/\x07/g;' | grep --color=always -A2 "$@" | sed -e 's/\x07/\x0A/g'
+
+. $HOME/bin/colors.sh
+
+
+find $HOME/knowledge -maxdepth 3 -wholename '*memo/*.md' > $lof
+echo $MEMO_PATH | sed -e 's/:/\x0A/g' | while read p; do
+ls -1 $p/memo.* >> $lof
+ls -1 $p/*-memo.md >> $lof
+done
+
+cat $lof | while read f; do
+if grep -q "$*" "$f"; then
+echo "${cyan}$f${nc}"
+grep --color=always -A2 -B1 -e "$*" "$f"
+fi
+done | less -R
+
+exit $?
+
+find $HOME/knowledge -maxdepth 3 -wholename '*memo/*.md' -exec cat "{}" \; | cat - $MEMO_PATH/memo.* |\
+perl -S uniq.pl | perl -np -e 's/[\r\\]\s$/\x07/g;' | grep --color=always -A2 -e "$*" | sed -e 's/\x07/\x0A/g'
 
 
 # $Source: /my/bourne/shell/scripts/memo,v $

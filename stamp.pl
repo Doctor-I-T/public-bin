@@ -291,7 +291,7 @@ sub affiche {
      $hour,$min,$sec,
      $yweek+1,chr(ord('a')+$low_id)
   } else {
-  printf "WH%-7.02f WD%5.01f WW%02d.%s WM%02d S-%s M%04u 0x%02X\n",
+  printf "WH%-7.02f WD%05.1f WW%02d.%s WM%02d S-%s M%04u 0x%02X\n",
          $yhour,
          $yday+1 + ($hour + (($min + $sec / 60) / 60 )) / 24,
          $yweek+1,
